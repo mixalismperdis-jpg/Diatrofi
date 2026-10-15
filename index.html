@@ -235,11 +235,16 @@ nav.tabs button.on{color:var(--ink)}
 
 <script>
 /* ---------- Αρχικά δεδομένα (από το αρχείο Numbers) ---------- */
-// Έκδοση: ίδιο νούμερο με το C στο sw.js. Η ώρα βγαίνει μόνη της από το πότε ανέβηκε το αρχείο (Last-Modified του GitHub Pages),
-// σε ώρα της συσκευής· το "at" μένει μόνο ως εφεδρεία όταν ο server δεν τη δίνει.
-const APP_VER={v:"v12",at:"15/10/2026 12:50"};
-{const lm=new Date(document.lastModified),p2=n=>String(n).padStart(2,"0");
- if(!isNaN(lm)&&Math.abs(Date.now()-lm)>60000)APP_VER.at=`${p2(lm.getDate())}/${p2(lm.getMonth()+1)}/${lm.getFullYear()} ${p2(lm.getHours())}:${p2(lm.getMinutes())}`}
+// Έκδοση: ίδιο νούμερο με το C στο sw.js. Η ώρα δεν γράφεται με το χέρι: είναι η ώρα που ανέβηκε το index.html
+// στο GitHub Pages (κεφαλίδα Last-Modified της απάντησης που φυλάει το service worker), σε ώρα της συσκευής.
+const APP_VER={v:"v13",at:""};
+function fmtDT(d){const p2=n=>String(n).padStart(2,"0");return `${p2(d.getDate())}/${p2(d.getMonth()+1)}/${d.getFullYear()} ${p2(d.getHours())}:${p2(d.getMinutes())}`}
+async function loadVerTime(){let lm=null;
+  try{const r=await caches.match(location.href,{ignoreSearch:true})||await caches.match("./index.html");lm=r&&r.headers.get("last-modified")}catch(e){}
+  if(!lm)try{const r=await fetch(location.pathname,{method:"HEAD",cache:"no-cache"});lm=r.headers.get("last-modified")}catch(e){}
+  let d=lm?new Date(lm):new Date(document.lastModified);
+  if(isNaN(d)||(!lm&&Math.abs(Date.now()-d)<60000))return;
+  APP_VER.at=fmtDT(d);const el=byId("verAt");if(el)el.textContent=" · "+APP_VER.at}
 const SLOTS=[{n:"Πρωινό",t:"8:30"},{n:"Σνακ",t:"πρωί"},{n:"Γεύμα 1",t:"11:00"},{n:"Γεύμα 2",t:"16:00"},{n:"Σνακ",t:"απόγευμα"},{n:"Βραδινό",t:"21:00"}];
 const DAYS=["Δευτέρα","Τρίτη","Τετάρτη","Πέμπτη","Παρασκευή","Σάββατο","Κυριακή"];
 const DSH=["Δευ","Τρι","Τετ","Πεμ","Παρ","Σαβ","Κυρ"];
@@ -578,8 +583,8 @@ function openSettings(){
     <h3>Λογαριασμός & αντίγραφα</h3>
     <p class="note">${AUTH.s?"Συνδεδεμένος ως <b>"+esc(AUTH.s.user&&AUTH.s.user.email||"")+"</b>. Τα δεδομένα συγχρονίζονται με τη βάση.":"Χωρίς λογαριασμό: τα δεδομένα είναι μόνο σε αυτή τη συσκευή."}</p>
     <div class="row">${AUTH.s?'<button class="btn sm" id="logout">Αποσύνδεση</button>':'<button class="btn sm primary" id="login">Σύνδεση</button>'}<button class="btn sm" id="bkDown">Λήψη αντιγράφου</button><button class="btn sm" id="bkUp">Επαναφορά από αρχείο</button></div>
-    <p class="note muted small">Έκδοση ${APP_VER.v} · ${APP_VER.at}</p>`,()=>{
-    byId("x").onclick=closeSheet;
+    <p class="note muted small">Έκδοση ${APP_VER.v}<span id="verAt">${APP_VER.at?" · "+APP_VER.at:""}</span></p>`,()=>{
+    byId("x").onclick=closeSheet;loadVerTime();
     const lo=byId("logout");if(lo)lo.onclick=()=>{flushAll();authSave(null);ST.db=false;setSync("Μόνο σε αυτή τη συσκευή");closeSheet();render();toast("Αποσυνδέθηκες")};
     const li=byId("login");if(li)li.onclick=openLogin;byId("bkDown").onclick=backupDownload;byId("bkUp").onclick=backupRestore})}
 
