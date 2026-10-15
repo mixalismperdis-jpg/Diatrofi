@@ -126,6 +126,8 @@ header.top .wrap{gap:6px}
 .sg .what{font-size:13px;font-weight:600;min-width:0}
 .sg .res{grid-column:1/-1;font-size:12px;color:var(--muted)}
 .sg .res b{color:var(--ink)}
+.mx{white-space:nowrap}.mx>span+span{margin-left:6px}.mx i{font-style:normal;font-size:.82em;font-weight:700;margin-right:2px}
+.mx .k{color:var(--ink)}.mx .p{color:var(--prot);font-weight:600}.mx .c{color:var(--carb)}.mx .f{color:var(--fat)}
 
 /* plan / lists */
 .plan-grid{display:grid;grid-template-columns:86px 1fr;gap:4px 8px;align-items:center}
@@ -237,7 +239,7 @@ nav.tabs button.on{color:var(--ink)}
 /* ---------- Αρχικά δεδομένα (από το αρχείο Numbers) ---------- */
 // Έκδοση: ίδιο νούμερο με το C στο sw.js. Η ώρα δεν γράφεται με το χέρι: είναι η ώρα που ανέβηκε το index.html
 // στο GitHub Pages (κεφαλίδα Last-Modified της απάντησης που φυλάει το service worker), σε ώρα της συσκευής.
-const APP_VER={v:"v13",at:""};
+const APP_VER={v:"v14",at:""};
 function fmtDT(d){const p2=n=>String(n).padStart(2,"0");return `${p2(d.getDate())}/${p2(d.getMonth()+1)}/${d.getFullYear()} ${p2(d.getHours())}:${p2(d.getMinutes())}`}
 async function loadVerTime(){let lm=null;
   try{const r=await caches.match(location.href,{ignoreSearch:true})||await caches.match("./index.html");lm=r&&r.headers.get("last-modified")}catch(e){}
@@ -275,6 +277,9 @@ const fmtD=iso=>iso.split("-").reverse().slice(0,2).join("/");
 S.date=todayISO();
 const uid=()=>Math.random().toString(36).slice(2,9);
 const r1=x=>Math.round(x*10)/10, r0=x=>Math.round(x);
+// kcal · P · C · F με σύμβολο και χρώμα (kcal ουδέτερο, P πράσινο, C κίτρινο, F μπλε)
+const MX=(k,p,c,f)=>`<span class="mx"><span class="k"><i>kcal</i>${k}</span><span class="p"><i>P</i>${p}</span>${c==null?"":`<span class="c"><i>C</i>${c}</span>`}${f==null?"":`<span class="f"><i>F</i>${f}</span>`}</span>`;
+const MXn=n=>MX(r0(n.k),r1(n.p),r0(n.c),r0(n.f));
 const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const byId=id=>document.getElementById(id);
 const food=id=>S.lib.foods.find(f=>f.id===id), meal=id=>S.lib.meals.find(m=>m.id===id);
@@ -545,9 +550,9 @@ function renderToday(){
     <section class="card day">`;
   SLOTS.forEach((sl,i)=>{const its=S.day.items.filter(x=>x.slot===i),ss=sumItems(its);
     h+=`<div class="slot"><div class="slot-head"><span class="t">${sl.n} <span class="muted small" style="font-weight:500">${sl.t}</span></span>
-      <span class="s">${its.length>1?`${r0(ss.k)} · <b>${r1(ss.p)}</b>`:its.length?"":"—"}</span><button class="plus" data-add="${i}" aria-label="Προσθήκη στο ${sl.n}">+</button></div>`;
+      <span class="s">${its.length>1?MXn(ss):its.length?"":"—"}</span><button class="plus" data-add="${i}" aria-label="Προσθήκη στο ${sl.n}">+</button></div>`;
     its.forEach(it=>{const n=itemNutr(it),q=qtyLabel(it);
-      h+=`<button class="item" data-edit="${it.id}"><span class="n">${esc(itemName(it))}${q?` <span class="q">${esc(q)}</span>`:""}</span><span class="v">${r0(n.k)} · <b>${r1(n.p)}</b></span></button>`});
+      h+=`<button class="item" data-edit="${it.id}"><span class="n">${esc(itemName(it))}${q?` <span class="q">${esc(q)}</span>`:""}</span><span class="v">${MXn(n)}</span></button>`});
     h+=`</div>`});
   h+=`</section>`;
   h+=`<section class="card sugg"><h3>Για να κλείσεις τη μέρα</h3>`;
@@ -558,7 +563,7 @@ function renderToday(){
     const fq=x=>`${x.f.u==="g"?x.q+" γρ.":x.q+" "+esc(x.f.pn||"τεμ.")} ${esc(x.f.name)}`;
     sg.forEach((o,ix)=>{const what=o.meal?esc(o.meal.name)+(o.s!==1?` <span class="muted">×${o.s}</span>`:"")+(o.extra?` <span class="muted">+</span> ${fq(o.extra)}`:""):o.parts.map(fq).join(" + ");
       h+=`<div class="sg"><span class="what">${what}</span><button class="btn sm primary" data-sugg="${ix}">Πρόσθεσε</button>
-      <span class="res">+${r0(o.k)} kcal · +${r1(o.p)} γρ. → <b>${r0(s.k+o.k)}</b> / <b>${r1(s.p+o.p)}</b></span></div>`});
+      <span class="res">+${MX(r0(o.k),r1(o.p))} → <b>${r0(s.k+o.k)}</b> / <b class="pr">${r1(s.p+o.p)}</b></span></div>`});
     S._sugg=sg}
   h+=`</section>`+weekHTML();
   if(S.dayEdited)h+=`<button class="btn danger sm" id="resetDay" style="align-self:flex-start">Επαναφορά της μέρας στο πρόγραμμα</button>`;
@@ -597,15 +602,15 @@ let TG=null;
 function dayTG(){return{kind:"day",get:()=>S.day.items,set:a=>{S.day.items=a},save:()=>saveDay(),tgt:()=>target()}}
 function planTG(d){return{kind:"plan",d,get:()=>S.plan.days[d],set:a=>{S.plan.days[d]=a},save:()=>{savePlan();if(!S.dayEdited&&wd(S.date)===d)S.day.items=planItems(S.date)},tgt:()=>targetFor(!!S.body.train.days[d])}}
 function previewLine(d){const t=TG.tgt(),s=sumItems(TG.get());
-  return `Η μέρα: <b>${r0(s.k+d.k)}</b> / ${r0(t.k)} kcal · <b class="pr">${r1(s.p+d.p)}</b> / ${r0(t.p)} γρ. · Υ ${r0(s.c+d.c)} · Λ ${r0(s.f+d.f)}`}
-const nv=n=>`${r0(n.k)} kcal · <b>${r1(n.p)} π.</b> · ${r0(n.c)} υ. · ${r0(n.f)} λ.`;
+  return `Η μέρα: <span class="mx"><span class="k"><i>kcal</i><b>${r0(s.k+d.k)}</b> / ${r0(t.k)}</span><span class="p"><i>P</i><b>${r1(s.p+d.p)}</b> / ${r0(t.p)}</span><span class="c"><i>C</i>${r0(s.c+d.c)}</span><span class="f"><i>F</i>${r0(s.f+d.f)}</span></span>`}
+const nv=n=>MXn(n);
 
 function pickerHTML(slot,q){
   const ql=q.trim().toLowerCase(),rec=S.pickSub==="rec";
   const meals=S.lib.meals.filter(m=>!ql||m.name.toLowerCase().includes(ql)).sort((a,b)=>(b.s?.includes(slot)?1:0)-(a.s?.includes(slot)?1:0));
   const foods=S.lib.foods.filter(f=>!ql||f.name.toLowerCase().includes(ql));
-  const mv=m=>{const n=mealNutr(m);return `${r0(n.k)} kcal · <b>${r1(n.p)} γρ.</b>${servOf(m)>1?' <span class="muted">/μερίδα</span>':""}`};
-  const fv=f=>`${f.kcal} kcal · <b>${f.p} γρ.</b> <span class="muted">/${f.u==="g"?"100γρ":esc(f.pn||"τεμ.")}</span>`;
+  const mv=m=>{const n=mealNutr(m);return `${MXn(n)}${servOf(m)>1?' <span class="muted">/μερίδα</span>':""}`};
+  const fv=f=>`${MX(f.kcal,f.p,f.c??0,f.f??0)} <span class="muted">/${f.u==="g"?"100γρ":esc(f.pn||"τεμ.")}</span>`;
   const seg=`<div class="seg"><button id="ps-rec" class="${rec?"on":""}">Συνταγές (${meals.length})</button><button id="ps-ing" class="${rec?"":"on"}">Υλικά (${foods.length})</button></div>`;
   return seg+(rec?`<div class="opts">${meals.map(m=>`<button class="opt" data-pm="${m.id}"><span>${esc(m.name)}</span><span class="v">${mv(m)}</span></button>`).join("")||'<span class="note">Καμία συνταγή. Φτιάξε από την καρτέλα Τρόφιμα › Συνταγές.</span>'}</div>`
   :`<div class="opts">${foods.map(f=>`<button class="opt" data-pf="${f.id}"><span>${esc(f.name)}${f.est?' <span class="est">εκτίμηση</span>':""}</span><span class="v">${fv(f)}</span></button>`).join("")||'<span class="note">Κανένα υλικό.</span>'}</div>`)}
@@ -720,9 +725,9 @@ function renderPlan(){
       <span class="tot">${r0(s.k)} (${dk>=0?"+":""}${r0(dk)}) · <b>${r1(s.p)}</b> (${dp>=0?"+":""}${r0(dp)})</span></div>`;
     SLOTS.forEach((sl,i)=>{const its=row.filter(x=>x.slot===i),ss=sumItems(its);
       h+=`<div class="slot"><div class="slot-head"><span class="t">${sl.n} <span class="muted small" style="font-weight:500">${sl.t}</span></span>
-        <span class="s">${its.length>1?`${r0(ss.k)} · <b>${r1(ss.p)}</b>`:its.length?"":"—"}</span><button class="plus" data-padd="${d}:${i}" aria-label="Προσθήκη στο ${dn} ${sl.n}">+</button></div>`;
+        <span class="s">${its.length>1?MXn(ss):its.length?"":"—"}</span><button class="plus" data-padd="${d}:${i}" aria-label="Προσθήκη στο ${dn} ${sl.n}">+</button></div>`;
       its.forEach(it=>{const n=itemNutr(it),q=qtyLabel(it);
-        h+=`<button class="item" data-pedit="${d}:${it.id}"><span class="n">${esc(itemName(it))}${q?` <span class="q">${esc(q)}</span>`:""}</span><span class="v">${r0(n.k)} · <b>${r1(n.p)}</b></span></button>`});
+        h+=`<button class="item" data-pedit="${d}:${it.id}"><span class="n">${esc(itemName(it))}${q?` <span class="q">${esc(q)}</span>`:""}</span><span class="v">${MXn(n)}</span></button>`});
       h+=`</div>`});
     h+=`</section>`});
   main.innerHTML=h;bindPlanSeg();
@@ -774,11 +779,11 @@ function renderFoods(){
   <input id="fq" placeholder="${rec?"Αναζήτηση συνταγής":"Αναζήτηση υλικού"}" value="${esc(S.foodQ)}" autocomplete="off">`;
   if(!rec)h+=`<section class="card" style="gap:4px"><div class="row between"><h3>Υλικά</h3><div class="row"><button class="btn sm" id="labelScan">Barcode</button><button class="btn sm primary" id="newFood">+ Νέο</button></div></div>
   <div class="list">${CATS.map(c=>{const g=foods.filter(f=>(CATS.includes(f.cat)?f.cat:"Άλλα")===c);return g.length?`<span class="label" style="margin-top:8px">${esc(c)} (${g.length})</span>`+g.map(f=>`<div class="li"><span class="n">${esc(f.name)}${f.est?' <span class="est">εκτίμηση</span>':""}</span>
-   <span class="v">${f.kcal} · <b>${f.p}</b> · ${f.c??0} · ${f.f??0}<br><span class="muted">ανά ${f.u==="g"?"100 γρ.":esc(f.pn||"τεμ.")}</span></span><button class="btn sm" data-ef="${f.id}">Επεξ.</button></div>`).join(""):""}).join("")||'<span class="note">Κανένα.</span>'}</div>
-   <p class="note">Σειρά τιμών: θερμίδες · <span class="pr">πρωτεΐνη</span> · υδατάνθρακες · λιπαρά. «Εκτίμηση» σημαίνει συνηθισμένες τιμές που έβαλα εγώ: διόρθωσέ τες από τη συσκευασία.</p></section>`;
+   <span class="v">${MX(f.kcal,f.p,f.c??0,f.f??0)}<br><span class="muted">ανά ${f.u==="g"?"100 γρ.":esc(f.pn||"τεμ.")}</span></span><button class="btn sm" data-ef="${f.id}">Επεξ.</button></div>`).join(""):""}).join("")||'<span class="note">Κανένα.</span>'}</div>
+   <p class="note">kcal = θερμίδες, <span class="pr">P = πρωτεΐνη</span>, <span style="color:var(--carb)">C = υδατάνθρακες</span>, <span style="color:var(--fat)">F = λιπαρά</span>. «Εκτίμηση» σημαίνει συνηθισμένες τιμές που έβαλα εγώ: διόρθωσέ τες από τη συσκευασία.</p></section>`;
   else h+=`<section class="card" style="gap:4px"><div class="row between"><h3>Συνταγές</h3><button class="btn sm primary" id="newMeal">+ Νέα συνταγή</button></div>
   <div class="list">${meals.map(m=>{const n=mealNutr(m),sv=servOf(m);return `<div class="li"><span class="n">${esc(m.name)}</span>
-   <span class="v">${r0(n.k)} · <b>${r1(n.p)}</b> · ${r0(n.c)} · ${r0(n.f)}<br><span class="muted">${sv>1?"ανά μερίδα ("+sv+")":"ανά μερίδα"}</span></span><button class="btn sm" data-em="${m.id}">Επεξ.</button></div>`}).join("")||'<span class="note">Καμία.</span>'}</div>
+   <span class="v">${MXn(n)}<br><span class="muted">${sv>1?"ανά μερίδα ("+sv+")":"ανά μερίδα"}</span></span><button class="btn sm" data-em="${m.id}">Επεξ.</button></div>`}).join("")||'<span class="note">Καμία.</span>'}</div>
    <p class="note">Φτιάξε συνταγή από τα υλικά σου· οι τιμές βγαίνουν μόνες τους. Στο πρόγραμμα διαλέγεις συνταγή ή μεμονωμένο υλικό.</p></section>`;
   main.innerHTML=h;
   byId("fs-ing").onclick=()=>{S.foodSub="ing";S.foodQ="";renderFoods()};byId("fs-rec").onclick=()=>{S.foodSub="rec";S.foodQ="";renderFoods()};
