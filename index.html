@@ -1,0 +1,926 @@
+<!doctype html>
+<html lang="el">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Η Διατροφή μου</title>
+<meta name="theme-color" content="#FAFAF9" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#141413" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Διατροφή">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-192.png">
+<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,-apple-system,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Commissioner:wght@400;500;600;700;800&display=swap">
+<style>
+/* Layout: phone-first compact app; quiet monochrome with one green for protein; hairline cards, thin rings, bottom tab bar */
+:root{
+  --bg:#FAFAF9; --surface:#FFFFFF; --surface-2:#F1F1EF; --line:#E4E4E1;
+  --ink:#1C1C1A; --muted:#75756F;
+  --accent:#1C1C1A; --accent-ink:#FFFFFF;
+  --prot:#2F7A68; --prot-soft:#E5F0EC;
+  --warn:#C2412D; --warn-soft:#FBE9E5; --ok:#2F7A68;
+  --carb:#B7791F; --fat:#4A6FA5;
+  --f-ui:"Commissioner",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#141413; --surface:#1C1C1B; --surface-2:#262624; --line:#30302D;
+  --ink:#EDEDEA; --muted:#9A9A93; --accent:#EDEDEA; --accent-ink:#141413;
+  --prot:#6CC3AC; --prot-soft:#1D2E29; --warn:#F08672; --warn-soft:#3A201B; --ok:#6CC3AC; --carb:#E2B254; --fat:#8FB0E0; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#141413; --surface:#1C1C1B; --surface-2:#262624; --line:#30302D;
+  --ink:#EDEDEA; --muted:#9A9A93; --accent:#EDEDEA; --accent-ink:#141413;
+  --prot:#6CC3AC; --prot-soft:#1D2E29; --warn:#F08672; --warn-soft:#3A201B; --ok:#6CC3AC; --carb:#E2B254; --fat:#8FB0E0; color-scheme:dark}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{background:var(--bg)}
+body{color:var(--ink);font-family:var(--f-ui);font-size:15px;line-height:1.45;font-variant-numeric:tabular-nums;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 84px}
+.wrap{max-width:720px;margin:0 auto;display:flex;flex-direction:column;gap:12px}
+h1,h2,h3{margin:0;text-wrap:balance;letter-spacing:-.02em}
+h1{font-size:20px;font-weight:700} h2{font-size:16px;font-weight:700} h3{font-size:14px;font-weight:700}
+.muted{color:var(--muted)} .small{font-size:13px} .pr{color:var(--prot)}
+.label{font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);font-weight:700}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.btn{border:1px solid var(--line);background:transparent;border-radius:10px;padding:8px 14px;font-weight:700;font-size:14px}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.btn.ghost{border-color:transparent;padding:6px 8px}
+.btn.danger{color:var(--warn)}
+.btn.sm{padding:5px 10px;font-size:13px}
+.btn:disabled{opacity:.5}
+input,select{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:8px 10px;min-width:0;width:100%}
+input:focus,select:focus{border-color:var(--ink)}
+input[type=checkbox]{width:auto;accent-color:var(--prot)}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.between{justify-content:space-between}
+.grow{flex:1;min-width:0}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:12px;display:flex;flex-direction:column;gap:10px}
+.note{font-size:12.5px;color:var(--muted);line-height:1.5;margin:0}
+.chip{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;border-radius:99px;padding:5px 10px;background:var(--surface-2);color:var(--muted);border:0}
+.chip.on{background:var(--prot-soft);color:var(--prot)}
+.seg{display:inline-flex;background:var(--surface-2);border-radius:10px;padding:3px;gap:2px;align-self:flex-start}
+.seg button{border:0;background:transparent;padding:5px 12px;font-size:13px;font-weight:700;border-radius:8px;color:var(--muted)}
+.seg button.on{background:var(--surface);color:var(--ink);box-shadow:0 0 0 1px var(--line)}
+
+/* header */
+header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);border-bottom:1px solid var(--line);
+  padding-block:8px;margin-inline:calc(-1 * max(16px,env(safe-area-inset-left,0px)));padding-inline:max(16px,env(safe-area-inset-left,0px));margin-bottom:4px}
+header.top .wrap{gap:6px}
+.sync{font-size:11.5px;color:var(--muted);text-align:right}
+.gauges{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.gauge{display:flex;flex-direction:column;align-items:center;gap:3px;min-width:0;text-align:center}
+.gauge .gtext{align-items:center}
+.gauge.c .rem.need{color:var(--carb)} .gauge.f .rem.need{color:var(--fat)}
+.ring{position:relative;width:58px;height:58px;flex:none}
+.ring svg{width:100%;height:100%;transform:rotate(-90deg)}
+.ring .c{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1}
+.ring .c b{font-size:14px;font-weight:700}
+.ring .c small{font-size:9px;color:var(--muted);font-weight:600;margin-top:1px}
+.gtext{display:flex;flex-direction:column;gap:1px;min-width:0}
+.gtext .of{font-size:11px;color:var(--muted)}
+.rem{font-size:12px;font-weight:700;line-height:1.2}
+.gauge.p .rem.need{color:var(--prot)} .rem.over{color:var(--warn)} .rem.done{color:var(--ok)}
+.macros{display:none}
+.macros b{color:var(--ink);font-weight:700}
+.macros .over b{color:var(--warn)}
+@media (prefers-reduced-motion:no-preference){.ring circle.fg{transition:stroke-dashoffset .5s ease}}
+
+/* today */
+.daynav{display:flex;align-items:center;gap:6px;flex:1;min-width:0}
+.daynav input{flex:1 1 auto;max-width:150px;padding:6px 8px}
+.daynav .btn{width:32px;height:32px;padding:0}
+.card.day{padding:2px 12px;gap:0}
+.slot{display:flex;flex-direction:column;border-bottom:1px solid var(--line);padding-block:6px}
+.slot:last-child{border-bottom:0}
+.slot-head{display:flex;align-items:center;gap:8px;min-height:30px}
+.slot-head .t{font-size:13px;font-weight:700;flex:1}
+.slot-head .s{font-size:12px;color:var(--muted)}
+.slot-head .s b{color:var(--prot);font-weight:600}
+.plus{border:1px solid var(--line);background:transparent;width:26px;height:26px;border-radius:8px;font-size:16px;line-height:1;padding:0}
+.item{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;border:0;border-radius:6px;padding:4px 0;background:transparent;text-align:left;width:100%}
+.item:hover{background:var(--surface-2)}
+.item .n{min-width:0;font-size:13.5px;line-height:1.3}
+.item .q{font-size:12px;color:var(--muted)}
+.item .v{font-size:12.5px;white-space:nowrap}
+.item .v b{color:var(--prot);font-weight:600}
+.week{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;align-items:end}
+.wd{border:0;background:transparent;padding:0;display:flex;flex-direction:column;align-items:center;gap:3px}
+.wd .col{width:100%;max-width:30px;height:52px;background:var(--surface-2);border-radius:6px;position:relative;overflow:hidden}
+.wd .col i{position:absolute;left:0;right:0;bottom:0;background:var(--ink);border-radius:6px 6px 0 0}
+.wd .col i.over{background:var(--warn)}
+.wd .col i.plan{background:var(--muted);opacity:.45}
+.wd .col .tl{position:absolute;left:0;right:0;border-top:1.5px dashed var(--prot)}
+.wd span{font-size:11px;color:var(--muted);font-weight:600}
+.wd.cur span{color:var(--ink);font-weight:800}
+.wd .tr{width:5px;height:5px;border-radius:9px;background:var(--prot)}
+.wd .tr.off{background:transparent}
+.sugg .sg{display:grid;grid-template-columns:1fr auto;gap:4px 10px;align-items:center;border:1px dashed var(--line);border-radius:12px;padding:8px 10px}
+.sg .what{font-size:13px;font-weight:600;min-width:0}
+.sg .res{grid-column:1/-1;font-size:12px;color:var(--muted)}
+.sg .res b{color:var(--ink)}
+
+/* plan / lists */
+.plan-grid{display:grid;grid-template-columns:86px 1fr;gap:4px 8px;align-items:center}
+.plan-grid .sl{font-size:12px;color:var(--muted);font-weight:700}
+.plan-grid select{padding:6px 8px;font-size:13px}
+.tot{font-size:13px;font-weight:600}
+.tot b{color:var(--prot);font-weight:600}
+.list{display:flex;flex-direction:column}
+.li{display:grid;grid-template-columns:1fr auto auto;gap:10px;align-items:center;padding:7px 2px;border-bottom:1px solid var(--line)}
+.li:last-child{border-bottom:0}
+.li .n{min-width:0;font-size:14px}
+.li .v{font-size:12px;text-align:right;white-space:nowrap}
+.li .v b{color:var(--prot);font-weight:600}
+.est{font-size:11px;color:var(--muted);font-weight:600;border:1px solid var(--line);border-radius:6px;padding:0 4px;white-space:nowrap}
+.shop{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;padding:7px 2px;border-bottom:1px solid var(--line);font-size:14px}
+.shop:last-child{border-bottom:0}
+.shop.done .n{text-decoration:line-through;color:var(--muted)}
+.shop .q{font-weight:700;white-space:nowrap}
+
+/* body */
+.form{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px}
+.field{display:flex;flex-direction:column;gap:4px}
+.field>span{font-size:12px;color:var(--muted);font-weight:700}
+.goals{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.goal{border:1px solid var(--line);border-radius:12px;padding:10px;background:var(--surface);text-align:left;display:flex;flex-direction:column;gap:2px}
+.goal.on{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
+.goal .gk{font-size:18px;font-weight:800}
+.goal .gp{font-size:13px;color:var(--prot);font-weight:700}
+.stats{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px}
+.stat{display:flex;flex-direction:column;gap:2px}
+.stat .x{font-size:20px;font-weight:800}
+.chart svg{width:100%;height:auto;display:block}
+.tbl{overflow-x:auto}
+.tbl table{border-collapse:collapse;width:100%;min-width:420px;font-size:13px}
+.tbl th,.tbl td{text-align:left;padding:6px 4px;border-bottom:1px solid var(--line)}
+.days7{display:flex;gap:6px;flex-wrap:wrap}
+
+/* tabs */
+nav.tabs{position:fixed;left:0;right:0;bottom:0;z-index:10;background:var(--surface);border-top:1px solid var(--line);
+  padding:4px max(10px,env(safe-area-inset-right,0px)) calc(4px + env(safe-area-inset-bottom,0px)) max(10px,env(safe-area-inset-left,0px));display:flex;justify-content:center}
+nav.tabs .in{display:grid;grid-template-columns:repeat(4,1fr);max-width:720px;width:100%;gap:4px}
+nav.tabs button{border:0;background:transparent;padding:5px 4px;border-radius:10px;font-size:11px;font-weight:700;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:2px}
+nav.tabs button svg{width:20px;height:20px}
+nav.tabs button.on{color:var(--ink)}
+
+/* sheet */
+.scrim{position:fixed;inset:0;background:rgba(10,10,9,.45);z-index:20;display:flex;align-items:flex-end;justify-content:center}
+.sheet{background:var(--bg);width:100%;max-width:720px;max-height:88%;overflow:auto;border-radius:16px 16px 0 0;border-top:1px solid var(--line);
+  padding:16px max(16px,env(safe-area-inset-right,0px)) calc(20px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));display:flex;flex-direction:column;gap:10px}
+.sheet .preview{position:sticky;top:-16px;background:var(--bg);padding-block:6px;z-index:1;font-size:13px}
+.opt{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;padding:9px 10px;border:1px solid var(--line);border-radius:10px;background:var(--surface);text-align:left;width:100%}
+.opt:hover{border-color:var(--muted)}
+.opt .v{font-size:12px;white-space:nowrap}
+.opt .v b{color:var(--prot);font-weight:600}
+.opts{display:flex;flex-direction:column;gap:6px}
+.stepper{display:flex;align-items:center;gap:8px}
+.stepper .btn{width:40px;height:40px;padding:0;font-size:18px}
+.stepper input{width:100px;text-align:center;font-size:17px;font-weight:700}
+.pitem{display:grid;grid-template-columns:1fr 80px auto;gap:8px;align-items:center;font-size:13px}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(76px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:9px 15px;border-radius:99px;font-size:13px;font-weight:700;z-index:30}
+@media (max-width:420px){.goals{grid-template-columns:1fr}.goal{flex-direction:row;justify-content:space-between;align-items:baseline;flex-wrap:wrap}}
+</style>
+
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <div class="row between"><h1 id="hTitle">Σήμερα</h1><span class="sync" id="sync">Σύνδεση…</span></div>
+    <div id="gaugeBox"><div class="gauges" id="gauges"></div><div class="macros" id="macros"></div></div>
+  </div>
+</header>
+
+<main class="wrap" id="main"></main>
+
+<nav class="tabs" aria-label="Ενότητες"><div class="in">
+  <button id="tab-today" data-tab="today"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="3"/><path d="M3 9h18M8 2v4M16 2v4"/></svg>Σήμερα</button>
+  <button id="tab-plan" data-tab="plan"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h10"/></svg>Πρόγραμμα</button>
+  <button id="tab-foods" data-tab="foods"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3c4 0 7 3 7 8s-3 10-7 10-7-5-7-10 3-8 7-8z"/><path d="M12 3c-1 2-1 4 0 6"/></svg>Τρόφιμα</button>
+  <button id="tab-body" data-tab="body"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="2.5"/><path d="M6 10h12M12 10v11M8 21l4-6 4 6"/></svg>Το σώμα μου</button>
+</div></nav>
+
+<div id="sheetRoot"></div>
+<input type="file" id="restoreIn" accept="application/json,.json" hidden>
+
+<script>
+/* ---------- Αρχικά δεδομένα (από το αρχείο Numbers) ---------- */
+const SLOTS=[{n:"Πρωινό",t:"8:30"},{n:"Σνακ",t:"πρωί"},{n:"Γεύμα 1",t:"11:00"},{n:"Γεύμα 2",t:"16:00"},{n:"Σνακ",t:"απόγευμα"},{n:"Βραδινό",t:"21:00"}];
+const DAYS=["Δευτέρα","Τρίτη","Τετάρτη","Πέμπτη","Παρασκευή","Σάββατο","Κυριακή"];
+const DSH=["Δευ","Τρι","Τετ","Πεμ","Παρ","Σαβ","Κυρ"];
+const CATS=["Κρέας & ψάρι","Γαλακτοκομικά & αυγά","Αλλαντικά & τυριά","Φρούτα & λαχανικά","Ψωμί","Ντουλάπι","Ξηροί καρποί","Άλλα"];
+const DEFAULT_FOODS=[{"id": "banana", "name": "Μπανάνα", "u": "pc", "kcal": 120, "p": 1, "c": 27, "f": 0.9, "pn": "τεμ.", "est": false, "cat": "Φρούτα & λαχανικά"}, {"id": "apple", "name": "Μήλο", "u": "pc", "kcal": 77.5, "p": 0.5, "c": 18.9, "f": 0, "pn": "τεμ.", "est": false, "cat": "Φρούτα & λαχανικά"}, {"id": "honey", "name": "Μέλι", "u": "g", "kcal": 304, "p": 0, "c": 76.0, "f": 0, "pn": "", "est": false, "cat": "Ντουλάπι"}, {"id": "walnut", "name": "Καρύδια", "u": "g", "kcal": 490.5, "p": 11.5, "c": 14, "f": 43.2, "pn": "", "est": false, "cat": "Ξηροί καρποί"}, {"id": "oats", "name": "Βρώμη", "u": "g", "kcal": 374, "p": 11.2, "c": 60, "f": 9.9, "pn": "", "est": false, "cat": "Ντουλάπι"}, {"id": "pancake", "name": "Pancake πρωτεΐνης", "u": "pc", "kcal": 155, "p": 12.8, "c": 15, "f": 4.9, "pn": "τεμ.", "est": false, "cat": "Ντουλάπι"}, {"id": "pb", "name": "Φυστικοβούτυρο", "u": "g", "kcal": 662, "p": 25.6, "c": 20, "f": 53.3, "pn": "", "est": false, "cat": "Ντουλάπι"}, {"id": "avocado", "name": "Αβοκάντο", "u": "g", "kcal": 160, "p": 2, "c": 8.5, "f": 13.1, "pn": "", "est": false, "cat": "Φρούτα & λαχανικά"}, {"id": "mince", "name": "Κιμάς μοσχαρίσιος (ωμός)", "u": "g", "kcal": 230, "p": 23.5, "c": 0, "f": 15.1, "pn": "", "est": false, "cat": "Κρέας & ψάρι"}, {"id": "chicken", "name": "Κοτόπουλο (ωμό)", "u": "g", "kcal": 114, "p": 21.2, "c": 0, "f": 3.2, "pn": "", "est": false, "cat": "Κρέας & ψάρι"}, {"id": "liver", "name": "Συκώτι μοσχαρίσιο", "u": "g", "kcal": 116.1, "p": 16.1, "c": 4, "f": 4.0, "pn": "", "est": false, "cat": "Κρέας & ψάρι"}, {"id": "salmon", "name": "Σολομός", "u": "g", "kcal": 247, "p": 19, "c": 0, "f": 19.0, "pn": "", "est": false, "cat": "Κρέας & ψάρι"}, {"id": "oil", "name": "Ελαιόλαδο", "u": "pc", "kcal": 124, "p": 0, "c": 0, "f": 13.8, "pn": "κ.σ.", "est": false, "cat": "Ντουλάπι"}, {"id": "ham", "name": "Ζαμπόν", "u": "pc", "kcal": 73, "p": 4.1, "c": 1, "f": 5.8, "pn": "φέτα 25γρ", "est": false, "cat": "Αλλαντικά & τυριά"}, {"id": "turkey", "name": "Γαλοπούλα", "u": "pc", "kcal": 30, "p": 5, "c": 0.5, "f": 0.9, "pn": "φέτα 25γρ", "est": false, "cat": "Αλλαντικά & τυριά"}, {"id": "gouda", "name": "Τυρί γκούντα", "u": "pc", "kcal": 91, "p": 7, "c": 0, "f": 7.0, "pn": "φέτα 25γρ", "est": false, "cat": "Αλλαντικά & τυριά"}, {"id": "cottage", "name": "Cottage Royal", "u": "g", "kcal": 92, "p": 13, "c": 3.4, "f": 2.9, "pn": "", "est": false, "cat": "Γαλακτοκομικά & αυγά"}, {"id": "graviera", "name": "Γραβιέρα", "u": "g", "kcal": 400, "p": 26.3, "c": 0.5, "f": 32.5, "pn": "", "est": false, "cat": "Αλλαντικά & τυριά"}, {"id": "mozz", "name": "Μοτσαρέλα", "u": "g", "kcal": 216.4, "p": 16.4, "c": 2, "f": 15.9, "pn": "", "est": false, "cat": "Αλλαντικά & τυριά"}, {"id": "feta", "name": "Φέτα", "u": "g", "kcal": 280, "p": 16.7, "c": 1, "f": 23.2, "pn": "", "est": false, "cat": "Αλλαντικά & τυριά"}, {"id": "almond", "name": "Αμύγδαλα", "u": "g", "kcal": 570, "p": 21.3, "c": 20, "f": 45.0, "pn": "", "est": false, "cat": "Ξηροί καρποί"}, {"id": "egg", "name": "Αυγό", "u": "pc", "kcal": 77.5, "p": 6.3, "c": 0.5, "f": 5.6, "pn": "τεμ. 50γρ", "est": false, "cat": "Γαλακτοκομικά & αυγά"}, {"id": "white", "name": "Ασπράδι", "u": "pc", "kcal": 17, "p": 3.6, "c": 0.3, "f": 0.2, "pn": "τεμ. 30γρ", "est": false, "cat": "Γαλακτοκομικά & αυγά"}, {"id": "basmati", "name": "Ρύζι basmati Agrino (άβραστο)", "u": "g", "kcal": 356.9, "p": 7.9, "c": 78, "f": 1.5, "pn": "", "est": false, "cat": "Ντουλάπι"}, {"id": "penne", "name": "Πέννες (άβραστες)", "u": "g", "kcal": 356, "p": 14.5, "c": 72, "f": 1.1, "pn": "", "est": false, "cat": "Ντουλάπι"}, {"id": "potato", "name": "Πατάτες (ωμές)", "u": "g", "kcal": 77, "p": 2, "c": 17, "f": 0.1, "pn": "", "est": false, "cat": "Φρούτα & λαχανικά"}, {"id": "sweetpot", "name": "Γλυκοπατάτες (ωμές)", "u": "g", "kcal": 90, "p": 2, "c": 20, "f": 0.2, "pn": "", "est": false, "cat": "Φρούτα & λαχανικά"}, {"id": "yogurt", "name": "Γιαούρτι 2% Total", "u": "g", "kcal": 70, "p": 9.9, "c": 3.8, "f": 1.7, "pn": "", "est": false, "cat": "Γαλακτοκομικά & αυγά"}, {"id": "tuna", "name": "Τόνος κονσέρβα σε νερό (στραγγ.)", "u": "g", "kcal": 110.8, "p": 24.8, "c": 0, "f": 1.3, "pn": "", "est": false, "cat": "Ντουλάπι"}, {"id": "bread", "name": "Ψωμί ολικής γερμανικού τύπου", "u": "pc", "kcal": 152, "p": 5.4, "c": 26, "f": 2.9, "pn": "φέτα 63γρ", "est": false, "cat": "Ψωμί"}, {"id": "tortilla", "name": "Τορτίγια high protein Καραμολέγκος", "u": "pc", "kcal": 198.5, "p": 11.3, "c": 22, "f": 7.3, "pn": "τεμ.", "est": false, "cat": "Ψωμί"}, {"id": "noodles", "name": "Νουντλς αυγού", "u": "g", "kcal": 500, "p": 10.7, "c": 72, "f": 18.8, "pn": "", "est": false, "cat": "Ντουλάπι"}, {"id": "curry", "name": "Πάστα κόκκινου κάρυ", "u": "g", "kcal": 122, "p": 4, "c": 15, "f": 5.1, "pn": "", "est": false, "cat": "Ντουλάπι"}, {"id": "coconut", "name": "Γάλα καρύδας", "u": "g", "kcal": 174, "p": 0, "c": 3, "f": 18.0, "pn": "", "est": false, "cat": "Ντουλάπι"}, {"id": "seabream", "name": "Τσιπούρα ψητή", "u": "pc", "kcal": 320, "p": 50, "c": 0, "f": 13.3, "pn": "τεμ.", "est": false, "cat": "Κρέας & ψάρι"}, {"id": "toast", "name": "Ψωμί τοστ high protein Καραμολέγκος", "u": "pc", "kcal": 84, "p": 6, "c": 11, "f": 1.8, "pn": "φέτα", "est": false, "cat": "Ψωμί"}, {"id": "squid", "name": "Καλαμάρι κονσέρβα Flokos", "u": "pc", "kcal": 222, "p": 36, "c": 4, "f": 6.9, "pn": "κονσέρβα", "est": false, "cat": "Ντουλάπι"}, {"id": "kefir", "name": "Κεφίρ κατσικίσιο", "u": "g", "kcal": 85, "p": 5, "c": 4.5, "f": 5.2, "pn": "", "est": false, "cat": "Γαλακτοκομικά & αυγά"}, {"id": "bacon", "name": "Μπέικον", "u": "g", "kcal": 417, "p": 13, "c": 1.4, "f": 39.9, "pn": "", "est": true, "cat": "Αλλαντικά & τυριά"}, {"id": "crouton", "name": "Κρουτόν", "u": "g", "kcal": 410, "p": 11, "c": 68, "f": 10.4, "pn": "", "est": true, "cat": "Ψωμί"}, {"id": "parmesan", "name": "Παρμεζάνα", "u": "g", "kcal": 392, "p": 35.8, "c": 3.2, "f": 26.2, "pn": "", "est": true, "cat": "Αλλαντικά & τυριά"}, {"id": "brownrice", "name": "Ρύζι καστανό (άβραστο)", "u": "g", "kcal": 362, "p": 7.5, "c": 76, "f": 3.1, "pn": "", "est": true, "cat": "Ντουλάπι"}, {"id": "beef", "name": "Μοσχάρι άπαχο (ωμό)", "u": "g", "kcal": 150, "p": 21, "c": 0, "f": 7.3, "pn": "", "est": true, "cat": "Κρέας & ψάρι"}, {"id": "gnocchi", "name": "Νιόκι πατάτας", "u": "g", "kcal": 150, "p": 3.5, "c": 32, "f": 0.9, "pn": "", "est": true, "cat": "Ντουλάπι"}, {"id": "pesto", "name": "Πέστο βασιλικού", "u": "g", "kcal": 450, "p": 5, "c": 6, "f": 45.1, "pn": "", "est": true, "cat": "Ντουλάπι"}, {"id": "caesar", "name": "Σως Caesar", "u": "g", "kcal": 480, "p": 2, "c": 4, "f": 50.7, "pn": "", "est": true, "cat": "Ντουλάπι"}, {"id": "blueberry", "name": "Μύρτιλα", "u": "g", "kcal": 57, "p": 0.7, "c": 13.6, "f": 0, "pn": "", "est": true, "cat": "Φρούτα & λαχανικά"}, {"id": "veg", "name": "Λαχανικά μιξ", "u": "g", "kcal": 35, "p": 2, "c": 6, "f": 0.3, "pn": "", "est": true, "cat": "Φρούτα & λαχανικά"}, {"id": "tomato", "name": "Ντοματίνια", "u": "g", "kcal": 18, "p": 0.9, "c": 3.6, "f": 0, "pn": "", "est": true, "cat": "Φρούτα & λαχανικά"}, {"id": "iceberg", "name": "Μαρούλι άισμπεργκ", "u": "g", "kcal": 14, "p": 0.9, "c": 2.6, "f": 0, "pn": "", "est": true, "cat": "Φρούτα & λαχανικά"}, {"id": "mustard", "name": "Μουστάρδα", "u": "g", "kcal": 66, "p": 4, "c": 5, "f": 3.3, "pn": "", "est": true, "cat": "Ντουλάπι"}, {"id": "rocket", "name": "Ρόκα", "u": "g", "kcal": 25, "p": 2.6, "c": 3.6, "f": 0, "pn": "", "est": true, "cat": "Φρούτα & λαχανικά"}];
+const DEFAULT_MEALS=[{"id": "b1", "name": "½ μπανάνα, 2 φέτες τοστ πρωτεΐνης, 1 κ.γ. φυστικοβούτυρο, 1 κ.γ. μέλι", "kcal": 455.3, "p": 18.9, "c": 55.7, "f": 17.4, "s": [0], "parts": null, "ing": [{"food": "banana", "qty": 0.5}, {"food": "toast", "qty": 2}, {"food": "pb", "qty": 25}, {"food": "honey", "qty": 20}]}, {"id": "b2", "name": "Ομελέτα 5 αυγά + 30 γρ. φέτα, 1 φέτα ψωμί γερμανικού", "kcal": 624.5, "p": 35.6, "c": 28.8, "f": 40.8, "s": [0], "parts": null, "ing": [{"food": "egg", "qty": 5}, {"food": "feta", "qty": 30}, {"food": "bread", "qty": 1}]}, {"id": "b3", "name": "Σάντουιτς με 2 αυγά ομελέτα, 2 φέτες τυρί, λαχανικά", "kcal": 443.2, "p": 28.4, "c": 16.8, "f": 29.2, "s": [0], "parts": null, "ing": [{"food": "egg", "qty": 2}, {"food": "gouda", "qty": 2}, {"food": "toast", "qty": 1}, {"food": "veg", "qty": 80}]}, {"id": "b4", "name": "4 αυγά βραστά με ντοματίνια, 1 φέτα ψωμί ολικής", "kcal": 462, "p": 30.6, "c": 31.6, "f": 23.7, "s": [0], "parts": null, "ing": [{"food": "egg", "qty": 4}, {"food": "tomato", "qty": 100}, {"food": "bread", "qty": 1}]}, {"id": "s1", "name": "50 γρ. αμύγδαλα", "kcal": 285, "p": 10.6, "c": 10.0, "f": 22.5, "s": [1, 4], "parts": null, "ing": [{"food": "almond", "qty": 50}]}, {"id": "s2", "name": "200 γρ. κεφίρ κατσικίσιο", "kcal": 170, "p": 10, "c": 9.0, "f": 10.4, "s": [1, 4], "parts": null, "ing": [{"food": "kefir", "qty": 200}]}, {"id": "l1", "name": "180 γρ. κοτόπουλο, 100 γρ. ρύζι μπασμάτι", "kcal": 562.3, "p": 46, "c": 78.0, "f": 7.4, "s": [2, 3], "parts": null, "ing": [{"food": "chicken", "qty": 180}, {"food": "basmati", "qty": 100}]}, {"id": "l2", "name": "180 γρ. μοσχάρι, 80 γρ. ωμό ρύζι, 150 γρ. γιαούρτι", "kcal": 770.8, "p": 63.6, "c": 68.1, "f": 27.1, "s": [2], "parts": null, "ing": [{"food": "beef", "qty": 180}, {"food": "basmati", "qty": 80}, {"food": "yogurt", "qty": 150}]}, {"id": "l3", "name": "75 γρ. νουντλς, 180 γρ. κοτόπουλο, μιξ λαχανικών, ελαιόλαδο", "kcal": 704.2, "p": 36.2, "c": 63.0, "f": 34.2, "s": [2, 5], "parts": null, "ing": [{"food": "noodles", "qty": 75}, {"food": "chicken", "qty": 180}, {"food": "veg", "qty": 150}, {"food": "oil", "qty": 1}]}, {"id": "l4", "name": "250 γρ. σολομός, 100 γρ. ρύζι καστανό", "kcal": 876.8, "p": 54.5, "c": 76.0, "f": 39.4, "s": [2], "parts": null, "ing": [{"food": "salmon", "qty": 250}, {"food": "brownrice", "qty": 100}]}, {"id": "l5", "name": "180 γρ. μοσχάρι, 100 γρ. ωμό ρύζι, 1 αυγό, ελαιόλαδο, λαχανικά", "kcal": 972.3, "p": 54.9, "c": 87.5, "f": 44.7, "s": [2], "parts": null, "ing": [{"food": "beef", "qty": 180}, {"food": "basmati", "qty": 100}, {"food": "egg", "qty": 1}, {"food": "oil", "qty": 1}, {"food": "veg", "qty": 150}]}, {"id": "m1", "name": "2 φέτες ψωμί ολικής, 2 γαλοπούλα, 2 τυρί, 1 μήλο", "kcal": 623.5, "p": 35.3, "c": 71.9, "f": 21.6, "s": [3], "parts": null, "ing": [{"food": "bread", "qty": 2}, {"food": "turkey", "qty": 2}, {"food": "gouda", "qty": 2}, {"food": "apple", "qty": 1}]}, {"id": "m2", "name": "200 γρ. γιαούρτι 2%, 20 γρ. μέλι, 20 γρ. καρύδια", "kcal": 298.9, "p": 22.1, "c": 25.6, "f": 12.0, "s": [3, 4], "parts": null, "ing": [{"food": "yogurt", "qty": 200}, {"food": "honey", "qty": 20}, {"food": "walnut", "qty": 20}]}, {"id": "m3", "name": "1 φέτα ψωμί ολικής, γαλοπούλα, τυρί, 1 μήλο", "kcal": 393.5, "p": 17, "c": 45.4, "f": 16.0, "s": [3], "parts": null, "ing": [{"food": "bread", "qty": 1}, {"food": "turkey", "qty": 1}, {"food": "gouda", "qty": 1}, {"food": "apple", "qty": 1}]}, {"id": "m4", "name": "1 τορτίγια πρωτεΐνης, 180 γρ. κοτόπουλο", "kcal": 421.2, "p": 44.3, "c": 22.0, "f": 17.3, "s": [3, 5], "parts": null, "ing": [{"food": "tortilla", "qty": 1}, {"food": "chicken", "qty": 180}]}, {"id": "d1", "name": "2 φέτες τοστ πρωτεΐνης, 180 γρ. κιμάς, 30 γρ. μοτσαρέλα, ντοματίνια, μουστάρδα", "kcal": 647, "p": 59.3, "c": 26.0, "f": 34.0, "s": [5], "parts": null, "ing": [{"food": "toast", "qty": 2}, {"food": "mince", "qty": 180}, {"food": "mozz", "qty": 30}, {"food": "tomato", "qty": 80}, {"food": "mustard", "qty": 10}]}, {"id": "d2", "name": "Ομελέτα 5 αυγά + 30 γρ. φέτα", "kcal": 472.5, "p": 30.2, "c": 2.8, "f": 37.8, "s": [5, 0], "parts": null, "ing": [{"food": "egg", "qty": 5}, {"food": "feta", "qty": 30}]}, {"id": "d3", "name": "Σαλάτα: 120 γρ. άισμπεργκ, 180 γρ. κοτόπουλο, μπέικον, κρουτόν, παρμεζάνα, σως Caesar", "kcal": 608.2, "p": 53, "c": 18.8, "f": 35.6, "s": [5], "parts": null, "ing": [{"food": "iceberg", "qty": 120}, {"food": "chicken", "qty": 180}, {"food": "bacon", "qty": 20}, {"food": "crouton", "qty": 20}, {"food": "parmesan", "qty": 20}, {"food": "caesar", "qty": 30}]}, {"id": "d4", "name": "5 αυγά, 2 φέτες ψωμί γερμανικού, 25 γρ. μοτσαρέλα, 25 γρ. ζαμπόν", "kcal": 818.6, "p": 50.5, "c": 56.0, "f": 43.6, "s": [5], "parts": null, "ing": [{"food": "egg", "qty": 5}, {"food": "bread", "qty": 2}, {"food": "mozz", "qty": 25}, {"food": "ham", "qty": 1}]}, {"id": "a1", "name": "125 γρ. σολομός, 80 γρ. ρύζι καστανό", "kcal": 522, "p": 27.5, "c": 60.8, "f": 18.8, "s": [2, 5], "parts": null, "ing": [{"food": "salmon", "qty": 125}, {"food": "brownrice", "qty": 80}]}, {"id": "a2", "name": "Ομελέτα 2 αυγά + 3 ασπράδια, λαχανικά, 30 γρ. φέτα", "kcal": 291, "p": 28.4, "c": 8.2, "f": 16.1, "s": [0, 5], "parts": null, "ing": [{"food": "egg", "qty": 2}, {"food": "white", "qty": 3}, {"food": "veg", "qty": 100}, {"food": "feta", "qty": 30}]}, {"id": "a3", "name": "180 γρ. συκώτι, 80 γρ. ωμό ρύζι", "kcal": 494.5, "p": 35.3, "c": 69.6, "f": 8.3, "s": [2, 5], "parts": null, "ing": [{"food": "liver", "qty": 180}, {"food": "basmati", "qty": 80}]}, {"id": "a4", "name": "170 γρ. νιόκι πατάτας, 180 γρ. κοτόπουλο, 25 γρ. πέστο βασιλικού", "kcal": 581.2, "p": 45.2, "c": 55.9, "f": 19.6, "s": [2, 5], "parts": null, "ing": [{"food": "gnocchi", "qty": 170}, {"food": "chicken", "qty": 180}, {"food": "pesto", "qty": 25}]}, {"id": "a5", "name": "180 γρ. μοσχάρι, 80 γρ. ωμό ρύζι, 1 αυγό, ελαιόλαδο, λαχανικά", "kcal": 901, "p": 54.9, "c": 71.9, "f": 43.8, "s": [2], "parts": null, "ing": [{"food": "beef", "qty": 180}, {"food": "basmati", "qty": 80}, {"food": "egg", "qty": 1}, {"food": "oil", "qty": 1}, {"food": "veg", "qty": 150}]}, {"id": "a6", "name": "200 γρ. cottage, 70 γρ. γιαούρτι, 1 αυγό, 30 γρ. μέλι, 50 γρ. μύρτιλα", "kcal": 401.7, "p": 26.3, "c": 39.6, "f": 15.4, "s": [0, 3, 4], "parts": null, "ing": [{"food": "cottage", "qty": 200}, {"food": "yogurt", "qty": 70}, {"food": "egg", "qty": 1}, {"food": "honey", "qty": 30}, {"food": "blueberry", "qty": 50}]}, {"id": "a7", "name": "250 γρ. σολομός, 200 γρ. γλυκοπατάτες", "kcal": 797.5, "p": 51.5, "c": 40.0, "f": 47.9, "s": [2, 5], "parts": null, "ing": [{"food": "salmon", "qty": 250}, {"food": "sweetpot", "qty": 200}]}, {"id": "a8", "name": "1 ψητή τσιπούρα, σαλάτα με 200 γρ. γλυκοπατάτα, ρόκα, ντοματίνια, κρεμμύδι", "kcal": 560, "p": 46.6, "c": 44.3, "f": 21.8, "s": [2, 5], "parts": null, "ing": [{"food": "seabream", "qty": 1}, {"food": "sweetpot", "qty": 200}, {"food": "rocket", "qty": 40}, {"food": "tomato", "qty": 80}]}];
+const DEFAULT_PLAN={days:[
+ ["b1","s1","l1","m1","s2","d1"],["b1","s1","l2","m1","s2","d2"],["b2","s1","l3","m2","s2","d1"],
+ ["b1","s1","l4","m3","s2","d3"],["b1","s1","l1","m4","s2","d4"],["b3","s1","l1","m1","s2","d1"],
+ ["b4","s1","l5","m4","s2","d2"]]};
+const DEFAULT_BODY={profile:{sex:"m",age:"",height:"",weight:"",activity:"1.55",neck:"",waist:"",hip:"",chest:"",arm:"",thigh:""},
+  goal:"maint",targetMode:"manual",manual:{kcal:2750,p:180},fatPct:27,train:{days:[false,false,false,false,false,false,false],extra:200},since:null,history:[]};
+
+/* ---------- Κατάσταση & βοηθητικά ---------- */
+const S={tab:"today",sub:"plan",lib:{ver:2,foods:DEFAULT_FOODS,meals:DEFAULT_MEALS},plan:null,body:DEFAULT_BODY,
+  date:null,day:null,dayEdited:false,docs:{},allLoaded:false,foodQ:"",suggSlot:null,shopRange:"rest"};
+const pad=n=>String(n).padStart(2,"0");
+const isoOf=d=>d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate());
+const todayISO=()=>isoOf(new Date());
+const parseISO=iso=>{const [y,m,d]=iso.split("-").map(Number);return new Date(y,m-1,d)};
+const addDays=(iso,n)=>{const d=parseISO(iso);d.setDate(d.getDate()+n);return isoOf(d)};
+const wd=iso=>(parseISO(iso).getDay()+6)%7;
+const weekStart=iso=>addDays(iso,-wd(iso));
+const fmtD=iso=>iso.split("-").reverse().slice(0,2).join("/");
+S.date=todayISO();
+const uid=()=>Math.random().toString(36).slice(2,9);
+const r1=x=>Math.round(x*10)/10, r0=x=>Math.round(x);
+const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const byId=id=>document.getElementById(id);
+const food=id=>S.lib.foods.find(f=>f.id===id), meal=id=>S.lib.meals.find(m=>m.id===id);
+const Z=()=>({k:0,p:0,c:0,f:0});
+const add=(a,b,m=1)=>{a.k+=b.k*m;a.p+=b.p*m;a.c+=b.c*m;a.f+=b.f*m;return a};
+
+function foodNutr(f,q){const m=f.u==="g"?q/100:q;return{k:f.kcal*m,p:f.p*m,c:(f.c||0)*m,f:(f.f||0)*m}}
+function mealNutr(m){
+  if(m.parts&&m.parts.length){const t=Z();for(const pt of m.parts){const f=food(pt.food);if(f)add(t,foodNutr(f,pt.qty))}return t}
+  return{k:+m.kcal||0,p:+m.p||0,c:+m.c||0,f:+m.f||0}}
+function itemNutr(it){
+  if(it.type==="meal"){const m=meal(it.ref);if(!m)return Z();const n=mealNutr(m);return add(Z(),n,it.qty)}
+  if(it.type==="custom")return add(Z(),{k:+it.kcal||0,p:+it.p||0,c:+it.c||0,f:+it.f||0},it.qty||1);
+  const f=food(it.ref);return f?foodNutr(f,it.qty):Z()}
+function itemName(it){if(it.type==="meal"){const m=meal(it.ref);return m?m.name:"(διαγραμμένο γεύμα)"}if(it.type==="custom")return it.name;const f=food(it.ref);return f?f.name:"(διαγραμμένο τρόφιμο)"}
+function qtyLabel(it){if(it.type==="meal")return it.qty===1?"":"×"+it.qty;if(it.type==="custom")return (it.grams?it.grams+" γρ. · ":"")+"από φωτογραφία";const f=food(it.ref);if(!f)return"";return f.u==="g"?it.qty+" γρ.":it.qty+" "+(f.pn||"τεμ.")}
+function sumItems(items){const t=Z();for(const it of items)add(t,itemNutr(it));return t}
+function normPlan(p){if(!p||!Array.isArray(p.days))p=DEFAULT_PLAN;
+  let changed=false;const days=p.days.map(row=>{if(Array.isArray(row)&&row.some(x=>x===null||typeof x==="string")){changed=true;return row.map((ref,slot)=>ref?{id:uid(),slot,type:"meal",ref,qty:1}:null).filter(Boolean)}return Array.isArray(row)?row:[]});
+  return{...p,ver:2,days,_changed:changed}}
+const validItem=it=>it&&(it.type==="custom"||(it.type==="meal"?!!meal(it.ref):!!food(it.ref)));
+function planItems(iso){return (S.plan.days[wd(iso)]||[]).filter(validItem).map(x=>({...x,id:uid()}))}
+function dayItems(iso){if(iso===S.date)return S.day.items;const d=S.docs[iso];return d&&d.edited&&d.items?d.items:planItems(iso)}
+function dayLogged(iso){if(iso===S.date)return S.dayEdited;const d=S.docs[iso];return !!(d&&d.edited)}
+function isTrain(iso){const d=iso===S.date?S.day:S.docs[iso];if(d&&typeof d.train==="boolean")return d.train;return !!S.body.train.days[wd(iso)]}
+
+/* ---------- Στόχοι ---------- */
+function bodyCalc(){
+  const pr=S.body.profile, w=+pr.weight, h=+pr.height, a=+pr.age, act=+pr.activity||1.55, male=pr.sex!=="f";
+  const out={ok:w>0&&h>0&&a>0};
+  const neck=+pr.neck, waist=+pr.waist, hip=+pr.hip;
+  if(h>0&&neck>0&&waist>0&&(male?waist>neck:(hip>0&&waist+hip>neck))){
+    const bf=male?495/(1.0324-0.19077*Math.log10(waist-neck)+0.15456*Math.log10(h))-450
+                 :495/(1.29579-0.35004*Math.log10(waist+hip-neck)+0.221*Math.log10(h))-450;
+    if(bf>2&&bf<60){out.bf=bf;if(w>0){out.lbm=w*(1-bf/100);out.fat=w-out.lbm}}}
+  out.whtr=h>0&&waist>0?waist/h:null;
+  if(w>0&&h>0)out.bmi=w/((h/100)**2);
+  if(!out.ok)return out;
+  out.mifflin=10*w+6.25*h-5*a+(male?5:-161);
+  out.katch=out.lbm?370+21.6*out.lbm:null;
+  out.bmr=out.katch?(out.mifflin+out.katch)/2:out.mifflin;
+  out.tdee=out.bmr*act;
+  out.goals={cut:{k:out.tdee*0.8,p:w*2.2,label:"Γράμμωση",sub:"−20% · ~0,5–0,7 κιλά/εβδ."},
+    maint:{k:out.tdee,p:w*1.8,label:"Συντήρηση",sub:"σταθερό βάρος"},
+    bulk:{k:out.tdee*1.1,p:w*1.8,label:"Όγκος",sub:"+10% · ~0,25 κιλά/εβδ."}};
+  return out}
+function baseTarget(){if(S.body.targetMode==="body"){const c=bodyCalc();if(c.ok){const g=c.goals[S.body.goal];return{k:g.k,p:g.p,src:g.label}}}
+  return{k:+S.body.manual.kcal||0,p:+S.body.manual.p||0,src:"Χειροκίνητος"}}
+function targetFor(tr){const b=baseTarget(),k=b.k+(tr?(+S.body.train.extra||0):0);
+  const f=k*(+S.body.fatPct||27)/100/9,c=Math.max(0,(k-4*b.p-9*f)/4);return{k,p:b.p,c,f,src:b.src,train:tr}}
+function target(iso=S.date){return targetFor(isTrain(iso))}
+
+/* ---------- Αποθήκευση (Supabase) ---------- */
+const SB_URL="https://dsfbuozbteseyuswobjr.supabase.co", SB_KEY="sb_publishable_DuuuIdhZdr311TBL9W2I4w_nwI_RtC2";
+const ST={db:false,chains:{},timers:{},pending:{}};
+function lsGet(k){try{const v=localStorage.getItem("diatrofi:"+k);return v?JSON.parse(v):null}catch(e){return null}}
+function lsSet(k,v){try{if(v==null)localStorage.removeItem("diatrofi:"+k);else localStorage.setItem("diatrofi:"+k,JSON.stringify(v))}catch(e){}}
+const clone=o=>o==null?o:JSON.parse(JSON.stringify(o));
+const AUTH={s:lsGet("auth")};
+function authSave(x){AUTH.s=x;lsSet("auth",x)}
+async function sbAuth(path,body){
+  const r=await fetch(SB_URL+"/auth/v1/"+path,{method:"POST",headers:{apikey:SB_KEY,"Content-Type":"application/json"},body:JSON.stringify(body)});
+  const j=await r.json().catch(()=>({}));if(!r.ok)throw{status:r.status,...j};return j}
+const sessFrom=j=>({access_token:j.access_token,refresh_token:j.refresh_token,expires_at:j.expires_at||Math.floor(Date.now()/1000)+(j.expires_in||3600),user:{id:j.user&&j.user.id,email:j.user&&j.user.email}});
+let refreshing=null;
+async function token(){
+  if(!AUTH.s)throw{status:401};
+  if(AUTH.s.expires_at-60>Date.now()/1000)return AUTH.s.access_token;
+  refreshing=refreshing||sbAuth("token?grant_type=refresh_token",{refresh_token:AUTH.s.refresh_token}).then(j=>{authSave(sessFrom(j))}).catch(e=>{if(e&&e.status>=400&&e.status<500){authSave(null);ST.db=false;setSync("Η σύνδεση έληξε · συνδέσου ξανά")}throw e}).finally(()=>{refreshing=null});
+  await refreshing;return AUTH.s.access_token}
+async function rest(method,q,body,prefer){
+  const t=await token();
+  const r=await fetch(SB_URL+"/rest/v1/kv"+q,{method,headers:{apikey:SB_KEY,Authorization:"Bearer "+t,"Content-Type":"application/json",...(prefer?{Prefer:prefer}:{})},body:body?JSON.stringify(body):undefined});
+  if(!r.ok)throw{status:r.status};const txt=await r.text();return txt?JSON.parse(txt):null}
+const cloudGet=async key=>{const rows=await rest("GET","?key=eq."+encodeURIComponent(key)+"&select=value");return rows&&rows[0]?rows[0].value:null};
+const cloudSet=(key,value)=>rest("POST","?on_conflict=user_id,key",[{key,value,updated_at:new Date().toISOString()}],"resolution=merge-duplicates,return=minimal");
+const cloudDays=()=>rest("GET","?key=like.day:*&select=key,value");
+function dirty(){return new Set(lsGet("dirty")||[])}
+function markDirty(key,on){const d=dirty();on?d.add(key):d.delete(key);lsSet("dirty",[...d])}
+function newer(key,a,b){/* a = λογαριασμός, b = συσκευή */
+  const ta=a&&a._t||0,tb=b&&b._t||0;if(ta!==tb)return tb>ta?"local":"cloud";
+  if(key==="lib")return (b&&b.ver||0)>(a&&a.ver||0)?"local":"cloud";
+  if(key.startsWith("day:"))return b&&b.edited&&!(a&&a.edited)?"local":"cloud";
+  return "cloud"}
+async function load(key){
+  const local=lsGet(key);
+  if(ST.db){try{const cloud=await cloudGet(key);
+    if(!cloud)return local;if(!local){lsSet(key,cloud);return cloud}
+    if(newer(key,cloud,local)==="local"){save(key,local,true);return local}
+    lsSet(key,cloud);return cloud}catch(e){}}
+  return local}
+function save(key,val,keepT){
+  if(!keepT&&val&&typeof val==="object")val._t=Date.now();
+  lsSet(key,val);markDirty(key,true);if(!ST.db)return;
+  clearTimeout(ST.timers[key]);
+  const run=()=>{delete ST.timers[key];delete ST.pending[key];const data=clone(val);
+    ST.chains[key]=(ST.chains[key]||Promise.resolve()).then(()=>cloudSet(key,data)).then(()=>{markDirty(key,false);setSync("Αποθηκεύτηκε")}).catch(()=>setSync(navigator.onLine?"Δεν αποθηκεύτηκε στη βάση · θα ξαναδοκιμάσω":"Εκτός σύνδεσης · θα συγχρονιστεί αργότερα"))};
+  ST.pending[key]=run;ST.timers[key]=setTimeout(run,400)}
+function flushAll(){for(const k of Object.keys(ST.pending)){clearTimeout(ST.timers[k]);ST.pending[k]()}}
+async function pushDirty(){if(!ST.db)return;for(const k of dirty()){const v=lsGet(k);if(v==null){markDirty(k,false);continue}
+  try{await cloudSet(k,v);markDirty(k,false)}catch(e){return}}}
+addEventListener("pagehide",flushAll);document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="hidden")flushAll()});
+addEventListener("online",()=>{pushDirty().then(()=>setSync(ST.db?"Συγχρονισμένο":"Στη συσκευή"))});
+function setSync(t){const el=byId("sync");if(el)el.textContent=t}
+function saveLib(){save("lib",S.lib)} function savePlan(){save("plan",S.plan)} function saveBody(){save("body",S.body)}
+function saveDay(markEdited=true){if(markEdited)S.dayEdited=true;
+  const doc={items:S.day.items,edited:S.dayEdited,train:typeof S.day.train==="boolean"?S.day.train:null};
+  S.docs[S.date]=doc;save("day:"+S.date,doc)}
+async function loadDocs(dates){const need=dates.filter(d=>!(d in S.docs)&&d!==S.date);
+  await Promise.all(need.map(async d=>{S.docs[d]=await load("day:"+d)}))}
+function localDays(){const out={};try{for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&k.startsWith("diatrofi:day:"))out[k.slice(13)]=JSON.parse(localStorage.getItem(k))}}catch(e){}return out}
+async function loadAllDays(){
+  Object.assign(S.docs,localDays());
+  if(ST.db){try{const rows=await cloudDays();(rows||[]).forEach(r=>{const d=r.key.slice(4),loc=S.docs[d];
+    if(!loc||newer(r.key,r.value,loc)==="cloud"){S.docs[d]=r.value;lsSet(r.key,r.value)}})}catch(e){}}
+  S.allLoaded=true}
+async function loadDay(){
+  const d=S.docs[S.date]!==undefined?S.docs[S.date]:await load("day:"+S.date);
+  S.docs[S.date]=d;
+  const train=d&&typeof d.train==="boolean"?d.train:undefined;
+  if(d&&d.edited&&d.items){S.day={items:clone(d.items),train};S.dayEdited=true}else{S.day={items:planItems(S.date),train};S.dayEdited=false}
+  render();
+  const ws=weekStart(S.date);await loadDocs([0,1,2,3,4,5,6].map(i=>addDays(ws,i)));if(S.tab==="today")render()}
+function migrateLib(lib){
+  if(lib.ver>=2)return lib;
+  const byF=Object.fromEntries(lib.foods.map(f=>[f.id,f]));
+  for(const df of DEFAULT_FOODS){const f=byF[df.id];if(f){if(f.c==null)f.c=df.c;if(f.f==null)f.f=df.f;if(!f.cat)f.cat=df.cat}else lib.foods.push({...df})}
+  const byM=Object.fromEntries(lib.meals.map(m=>[m.id,m]));
+  for(const dm of DEFAULT_MEALS){const m=byM[dm.id];if(m){if(m.c==null&&!m.parts){m.c=dm.c;m.f=dm.f}if(!m.ing)m.ing=dm.ing}}
+  lib.foods.forEach(f=>{if(f.c==null){f.c=0;f.f=0}if(!f.cat)f.cat="Άλλα"});
+  lib.ver=2;return lib}
+function mergeBody(b){return{...DEFAULT_BODY,...b,profile:{...DEFAULT_BODY.profile,...(b.profile||{})},manual:{...DEFAULT_BODY.manual,...(b.manual||{})},
+  train:{...DEFAULT_BODY.train,...(b.train||{})},history:b.history||[]}}
+async function cloudPhase(){
+  ST.db=true;setSync("Συγχρονισμός…");S.docs={};S.allLoaded=false;
+  try{
+    await pushDirty();
+    const [cl,cp,cb]=await Promise.all([load("lib"),load("plan"),load("body")]);
+    if(cl&&cl.foods){const v=cl.ver;S.lib=migrateLib(cl);if(v!==S.lib.ver)saveLib()}else saveLib();
+    if(cp&&cp.days){S.plan=normPlan(cp);const ch=S.plan._changed;delete S.plan._changed;if(ch)savePlan()}else savePlan();
+    if(cb&&cb.profile){S.body=mergeBody(cb);if(!S.body.since){S.body.since=todayISO();saveBody()}}else{S.body.since=S.body.since||todayISO();saveBody()}
+    await loadDay();setSync("Συγχρονισμένο");
+  }catch(e){if(ST.db)setSync("Εκτός σύνδεσης · δουλεύεις από τη συσκευή");await loadDay()}}
+async function boot(){
+  S.plan=normPlan(DEFAULT_PLAN);delete S.plan._changed;
+  const lib=lsGet("lib"),plan=lsGet("plan"),body=lsGet("body");
+  if(lib)S.lib=migrateLib(lib);if(plan){S.plan=normPlan(plan);delete S.plan._changed}if(body)S.body=mergeBody(body);
+  const tb=lsGet("tab");if(tb)S.tab=tb;
+  const ld=lsGet("day:"+S.date);S.docs[S.date]=ld;
+  if(!S.body.since){S.body.since=todayISO();lsSet("body",S.body)}
+  await loadDay();
+  if(AUTH.s){await cloudPhase();return}
+  setSync("Μόνο σε αυτή τη συσκευή");
+  if(!lsGet("localOnly"))openLogin()}
+function openLogin(){
+  sheet(`<h2>Σύνδεση</h2><p class="note">Με λογαριασμό τα δεδομένα σου φυλάγονται στη βάση και είναι ίδια σε κινητό και υπολογιστή. Τα βλέπεις μόνο εσύ.</p>
+    <label class="field"><span>Email</span><input id="lgE" type="email" autocomplete="email" inputmode="email" value="${esc(lsGet("lastEmail")||"")}"></label>
+    <label class="field"><span>Κωδικός (τουλάχιστον 6 χαρακτήρες)</span><input id="lgP" type="password" autocomplete="current-password"></label>
+    <p class="note" id="lgMsg"></p>
+    <div class="row"><button class="btn primary" id="lgIn">Σύνδεση</button><button class="btn" id="lgUp">Νέος λογαριασμός</button></div>
+    <button class="btn ghost" id="lgSkip" style="align-self:flex-start">Συνέχεια χωρίς λογαριασμό</button>`,()=>{
+    const msg=t=>{byId("lgMsg").textContent=t};
+    const creds=()=>{const email=byId("lgE").value.trim(),password=byId("lgP").value;lsSet("lastEmail",email);if(!email||password.length<6){msg("Βάλε email και κωδικό με τουλάχιστον 6 χαρακτήρες.");return null}return{email,password}};
+    const errTxt=e=>{const m=(e&&(e.msg||e.error_description||e.message||e.error_code))||"";
+      if(/confirm/i.test(m))return "Δεν έχεις επιβεβαιώσει ακόμα το email σου. Άνοιξε το email που σου στείλαμε και πάτα τον σύνδεσμο.";
+      if(/invalid/i.test(m))return "Λάθος email ή κωδικός.";
+      if(/already/i.test(m))return "Υπάρχει ήδη λογαριασμός με αυτό το email. Πάτα «Σύνδεση».";
+      return m?"Σφάλμα: "+m:"Δεν υπάρχει σύνδεση στο ίντερνετ."};
+    byId("lgIn").onclick=async()=>{const c=creds();if(!c)return;msg("Σύνδεση…");
+      try{const j=await sbAuth("token?grant_type=password",c);authSave(sessFrom(j));lsSet("localOnly",null);closeSheet();await cloudPhase();toast("Συνδέθηκες")}catch(e){msg(errTxt(e))}};
+    byId("lgUp").onclick=async()=>{const c=creds();if(!c)return;msg("Δημιουργία…");
+      try{const j=await sbAuth("signup",c);if(j.access_token){authSave(sessFrom(j));closeSheet();await cloudPhase();toast("Ο λογαριασμός φτιάχτηκε")}
+        else msg("Έτοιμο. Σου στείλαμε email επιβεβαίωσης: πάτα τον σύνδεσμο (αν ανοίξει σελίδα που δεν φορτώνει, δεν πειράζει) και μετά γύρνα εδώ και πάτα «Σύνδεση».")}catch(e){msg(errTxt(e))}};
+    byId("lgSkip").onclick=()=>{lsSet("localOnly",true);closeSheet()}})}
+async function backupDownload(){
+  await loadAllDays();const out={};
+  try{for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k.startsWith("diatrofi:")&&!/^diatrofi:(auth|dirty|tab|lastEmail|localOnly|shop:)/.test(k))out[k.slice(9)]=JSON.parse(localStorage.getItem(k))}}catch(e){}
+  const blob=new Blob([JSON.stringify({app:"diatrofi",date:todayISO(),data:out},null,1)],{type:"application/json"});
+  const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="diatrofi-"+todayISO()+".json";document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),4000)}
+function backupRestore(){const inp=byId("restoreIn");inp.value="";inp.onchange=async()=>{const f=inp.files&&inp.files[0];if(!f)return;
+  try{const j=JSON.parse(await f.text());if(j.app!=="diatrofi"||!j.data)throw 0;
+    for(const [k,v] of Object.entries(j.data)){if(v&&typeof v==="object")v._t=Date.now();lsSet(k,v);markDirty(k,true)}
+    await pushDirty();toast("Η επαναφορά έγινε");setTimeout(()=>location.reload(),600)}catch(e){toast("Το αρχείο δεν είναι αντίγραφο της εφαρμογής")}};inp.click()}
+
+/* ---------- Προτάσεις συμπλήρωσης ---------- */
+const CAPS={honey:30,walnut:40,oats:80,pb:40,avocado:100,mince:250,chicken:250,beef:250,liver:200,salmon:250,oil:2,ham:3,turkey:5,gouda:3,cottage:250,graviera:40,mozz:60,feta:60,almond:40,egg:5,white:6,basmati:120,brownrice:120,penne:120,potato:300,sweetpot:300,yogurt:300,tuna:200,bread:2,tortilla:2,noodles:90,curry:25,coconut:100,seabream:1,toast:3,squid:1,kefir:300,banana:2,apple:2,pancake:3,gnocchi:250,blueberry:150};
+function capOf(f){if(CAPS[f.id]!=null)return CAPS[f.id];if(f.u==="g")return f.kcal>450?40:250;return 3}
+function roundQty(f,q){if(f.u==="g")return Math.max(10,Math.round(q/5)*5);return Math.max(.5,Math.round(q*2)/2)}
+function okQty(f,q){return (f.u==="g"?q>=10:q>=.5)&&q<=capOf(f)}
+function suggest(Rk,Rp,slot){
+  const fit=m=>m.s&&m.s.includes(slot)?-.4:.6;
+  const foods=S.lib.foods.filter(f=>f.kcal>0&&!f.est), out=[];
+  const unit=f=>f.u==="g"?{k:f.kcal/100,p:f.p/100}:{k:f.kcal,p:f.p};
+  const score=(k,p)=>Math.abs(k-Rk)/80+Math.max(0,Rp-p)/6+Math.max(0,p-Rp)/15+(k>Rk+100?(k-Rk)/60:0);
+  for(const f of foods){const u=unit(f);let q=null;
+    if(Rp>2&&u.p>0)q=Rp/u.p;else if(Rk>0)q=Rk/u.k;
+    if(q==null)continue;q=roundQty(f,q);if(!okQty(f,q))continue;
+    const n=foodNutr(f,q);out.push({parts:[{f,q}],k:n.k,p:n.p,sc:score(n.k,n.p)})}
+  if(Rk>0&&Rp>0){
+    for(let i=0;i<foods.length;i++)for(let j=i+1;j<foods.length;j++){
+      const a=foods[i],b=foods[j],ua=unit(a),ub=unit(b),det=ua.k*ub.p-ub.k*ua.p;if(Math.abs(det)<1e-6)continue;
+      let qa=(Rk*ub.p-ub.k*Rp)/det,qb=(ua.k*Rp-Rk*ua.p)/det;if(qa<=0||qb<=0)continue;
+      qa=roundQty(a,qa);qb=roundQty(b,qb);if(!okQty(a,qa)||!okQty(b,qb))continue;
+      const na=foodNutr(a,qa),nb=foodNutr(b,qb),k=na.k+nb.k,p=na.p+nb.p;
+      out.push({parts:[{f:a,q:qa},{f:b,q:qb}],k,p,sc:score(k,p)+0.8})}}
+  for(const m of S.lib.meals){const n=mealNutr(m);for(const s of [.5,1,1.5]){const k=n.k*s,p=n.p*s;if(k>Rk+120)continue;out.push({meal:m,s,k,p,sc:score(k,p)-.5+fit(m)+(s===1?0:.3)})}
+    if(n.k<Rk-60&&Rp-n.p>4){let best=null;for(const f of foods){const u=unit(f);if(u.p<=0||u.k/u.p>9)continue;let q=roundQty(f,(Rp-n.p)/u.p);if(!okQty(f,q))continue;const fn=foodNutr(f,q),k=n.k+fn.k,p=n.p+fn.p,sc=score(k,p)-.1+fit(m);if(!best||sc<best.sc)best={meal:m,s:1,extra:{f,q},k,p,sc}}if(best)out.push(best)}}
+  out.sort((x,y)=>x.sc-y.sc);
+  const seen={},res=[];
+  for(const o of out){const keys=o.meal?["m:"+o.meal.id]:o.parts.map(x=>x.f.id);if(keys.some(k=>(seen[k]||0)>=1))continue;keys.forEach(k=>seen[k]=(seen[k]||0)+1);res.push(o);if(res.length>=3)break}
+  return res}
+
+/* ---------- Render ---------- */
+const main=byId("main");
+function render(){
+  document.querySelectorAll("nav.tabs button").forEach(b=>b.classList.toggle("on",b.dataset.tab===S.tab));
+  byId("hTitle").textContent={today:"Σήμερα",plan:S.sub==="shop"?"Λίστα για ψώνια":"Εβδομαδιαίο πρόγραμμα",foods:"Τρόφιμα & γεύματα",body:"Το σώμα μου"}[S.tab];
+  renderGauges();
+  ({today:renderToday,plan:renderPlan,foods:renderFoods,body:renderBody})[S.tab]()}
+
+function renderGauges(){
+  const box=byId("gaugeBox");
+  if(S.tab!=="today"){box.hidden=true;return}box.hidden=false;
+  const t=target(),s=sumItems(S.day.items);
+  const one=(cls,label,val,tg,unit,thr,col)=>{const frac=tg>0?Math.min(1,val/tg):0,diff=tg-val,C=2*Math.PI*40;
+    let rem,rc;if(Math.abs(diff)<=thr){rem="Στόχος ✓";rc="done"}else if(diff>0){rem="−"+r0(diff);rc="need"}else{rem="+"+r0(-diff)+" πάνω";rc="over"}
+    const stroke=diff<-thr?"var(--warn)":Math.abs(diff)<=thr?"var(--ok)":col;
+    return `<div class="gauge ${cls}"><div class="ring"><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" fill="none" stroke="var(--surface-2)" stroke-width="7"/>
+      <circle class="fg" cx="50" cy="50" r="40" fill="none" stroke="${stroke}" stroke-width="7" stroke-linecap="round" stroke-dasharray="${C}" stroke-dashoffset="${C*(1-frac)}"/></svg>
+      <div class="c"><b>${r0(val)}</b><small>${unit}</small></div></div>
+      <div class="gtext"><span class="label">${label}</span><span class="rem ${rc}">${rem}</span><span class="of">από ${r0(tg)}</span></div></div>`};
+  byId("gauges").innerHTML=one("k","Θερμίδες",s.k,t.k,"kcal",50,"var(--ink)")+one("p","Πρωτεΐνη",s.p,t.p,"γρ.",4,"var(--prot)")
+    +one("c","Υδατάνθρ.",s.c,t.c,"γρ.",Math.max(8,t.c*.05),"var(--carb)")+one("f","Λιπαρά",s.f,t.f,"γρ.",Math.max(4,t.f*.05),"var(--fat)");
+  byId("macros").innerHTML=""}
+
+function weekHTML(){
+  const ws=weekStart(S.date),dates=[0,1,2,3,4,5,6].map(i=>addDays(ws,i));
+  let sumK=0,sumP=0,tK=0,tP=0,doneK=0,doneTK=0,doneP=0,doneTP=0,restN=0;
+  const today=todayISO();
+  const cols=dates.map(d=>{const s=sumItems(dayItems(d)),t=target(d);sumK+=s.k;sumP+=s.p;tK+=t.k;tP+=t.p;
+    if(d<=S.date){doneK+=s.k;doneTK+=t.k;doneP+=s.p;doneTP+=t.p}else restN++;
+    const mx=Math.max(t.k*1.3,s.k,1),h=Math.min(100,s.k/mx*100),tl=100-t.k/mx*100;
+    const cls=s.k>t.k+150?"over":(d>today||(!dayLogged(d)&&d!==S.date&&d<today))?"plan":"";
+    return `<button class="wd ${d===S.date?"cur":""}" data-go="${d}" aria-label="${DAYS[wd(d)]} ${r0(s.k)} kcal"><div class="col"><i class="${cls}" style="height:${h}%"></i><div class="tl" style="top:${tl}%"></div></div><span>${DSH[wd(d)]}</span><div class="tr ${isTrain(d)?"":"off"}"></div></button>`}).join("");
+  let line;
+  if(restN>0){const needK=(tK-doneK)/restN,needP=(tP-doneP)/restN,baseK=(tK-doneTK)/restN,dk=needK-baseK;
+    line=Math.abs(dk)<40?`Η εβδομάδα πάει σύμφωνα με τον στόχο. Οι επόμενες ${restN} μέρες όπως το πρόγραμμα.`
+      :`Για να βγει η εβδομάδα: τις επόμενες ${restN} μέρες <b>${r0(needK)} kcal</b>/μέρα (${dk>0?"+":""}${r0(dk)} από τον στόχο)${needP>0?` και <b class="pr">${r0(needP)} γρ.</b> πρωτεΐνη`:""}.`}
+  else line=`Μέσος όρος εβδομάδας: <b>${r0(sumK/7)} kcal</b> και <b class="pr">${r1(sumP/7)} γρ.</b> τη μέρα (στόχος ${r0(tK/7)} / ${r0(tP/7)}).`;
+  return `<section class="card"><div class="row between"><h3>Εβδομάδα</h3><span class="small muted">${r0(sumK)} / ${r0(tK)} kcal</span></div><div class="week">${cols}</div><p class="note">${line}</p></section>`}
+
+function renderToday(){
+  const t=target(),s=sumItems(S.day.items),Rk=t.k-s.k,Rp=t.p-s.p;
+  const nowH=new Date().getHours(), defSlot=S.suggSlot??(nowH<10?0:nowH<12?2:nowH<17?3:nowH<20?4:5);
+  let h=`<div class="row between" style="gap:6px">
+    <div class="daynav"><button class="btn sm" id="prevDay" aria-label="Προηγούμενη μέρα">‹</button>
+    <input type="date" id="dateIn" value="${S.date}"><button class="btn sm" id="nextDay" aria-label="Επόμενη μέρα">›</button></div>
+    <button class="chip ${t.train?"on":""}" id="trainTg" title="Αλλάζει μόνο για αυτή τη μέρα">${t.train?"Προπόνηση":"Ξεκούραση"}</button></div>
+    <section class="card day">`;
+  SLOTS.forEach((sl,i)=>{const its=S.day.items.filter(x=>x.slot===i),ss=sumItems(its);
+    h+=`<div class="slot"><div class="slot-head"><span class="t">${sl.n} <span class="muted small" style="font-weight:500">${sl.t}</span></span>
+      <span class="s">${its.length>1?`${r0(ss.k)} · <b>${r1(ss.p)}</b>`:its.length?"":"—"}</span><button class="plus" data-add="${i}" aria-label="Προσθήκη στο ${sl.n}">+</button></div>`;
+    its.forEach(it=>{const n=itemNutr(it),q=qtyLabel(it);
+      h+=`<button class="item" data-edit="${it.id}"><span class="n">${esc(itemName(it))}${q?` <span class="q">${esc(q)}</span>`:""}</span><span class="v">${r0(n.k)} · <b>${r1(n.p)}</b></span></button>`});
+    h+=`</div>`});
+  h+=`</section>`;
+  h+=`<section class="card sugg"><h3>Για να κλείσεις τη μέρα</h3>`;
+  if(Rk<=50&&Rp<=4){h+=`<p class="note">${Rk<-150?"Έχεις ξεπεράσει τις θερμίδες κατά "+r0(-Rk)+" kcal. Αν θες, μίκρυνε μια μερίδα πατώντας πάνω της.":"Η μέρα είναι στον στόχο."}</p>`;S._sugg=[]}
+  else{const sg=suggest(Rk,Rp,defSlot);
+    h+=`<div class="row"><span class="small muted">${Rk<0?"Οι θερμίδες πέρασαν, προτιμώ άπαχη πρωτεΐνη. ":""}Στο</span><select id="suggSlot" style="width:auto;padding:5px 8px">${SLOTS.map((x,i)=>`<option value="${i}" ${i===defSlot?"selected":""}>${x.n} (${x.t})</option>`).join("")}</select></div>`;
+    if(!sg.length)h+=`<p class="note">Δεν βρήκα συνδυασμό που να ταιριάζει. Πρόσθεσε τρόφιμα στη λίστα σου.</p>`;
+    const fq=x=>`${x.f.u==="g"?x.q+" γρ.":x.q+" "+esc(x.f.pn||"τεμ.")} ${esc(x.f.name)}`;
+    sg.forEach((o,ix)=>{const what=o.meal?esc(o.meal.name)+(o.s!==1?` <span class="muted">×${o.s}</span>`:"")+(o.extra?` <span class="muted">+</span> ${fq(o.extra)}`:""):o.parts.map(fq).join(" + ");
+      h+=`<div class="sg"><span class="what">${what}</span><button class="btn sm primary" data-sugg="${ix}">Πρόσθεσε</button>
+      <span class="res">+${r0(o.k)} kcal · +${r1(o.p)} γρ. → <b>${r0(s.k+o.k)}</b> / <b>${r1(s.p+o.p)}</b></span></div>`});
+    S._sugg=sg}
+  h+=`</section>`+weekHTML();
+  if(S.dayEdited)h+=`<button class="btn danger sm" id="resetDay" style="align-self:flex-start">Επαναφορά της μέρας στο πρόγραμμα</button>`;
+  main.innerHTML=h;
+  const go=iso=>{S.date=iso;loadDay()};
+  byId("prevDay").onclick=()=>go(addDays(S.date,-1));byId("nextDay").onclick=()=>go(addDays(S.date,1));
+  byId("dateIn").onchange=e=>{if(e.target.value)go(e.target.value)};
+  byId("trainTg").onclick=()=>{S.day.train=!t.train;saveDay(false);render();toast(S.day.train?"Μέρα προπόνησης: +"+r0(+S.body.train.extra||0)+" kcal":"Μέρα ξεκούρασης")};
+  main.querySelectorAll("[data-go]").forEach(b=>b.onclick=()=>go(b.dataset.go));
+  main.querySelectorAll("[data-edit]").forEach(b=>b.onclick=()=>{TG=dayTG();openItemSheet(b.dataset.edit)});
+  main.querySelectorAll("[data-add]").forEach(b=>b.onclick=()=>{TG=dayTG();openAddSheet(+b.dataset.add)});
+  const ss=byId("suggSlot");if(ss)ss.onchange=e=>{S.suggSlot=+e.target.value};
+  main.querySelectorAll("[data-sugg]").forEach(b=>b.onclick=()=>{const o=S._sugg[+b.dataset.sugg],slot=+byId("suggSlot").value;
+    if(o.meal){S.day.items.push({id:uid(),slot,type:"meal",ref:o.meal.id,qty:o.s});if(o.extra)S.day.items.push({id:uid(),slot,type:"food",ref:o.extra.f.id,qty:o.extra.q})}
+    else o.parts.forEach(x=>S.day.items.push({id:uid(),slot,type:"food",ref:x.f.id,qty:x.q}));
+    saveDay();toast("Προστέθηκε στο "+SLOTS[slot].n);render()});
+  const rd=byId("resetDay");if(rd)rd.onclick=()=>{S.day.items=planItems(S.date);S.dayEdited=false;saveDay(false);render()}}
+
+/* ---------- Sheets ---------- */
+function closeSheet(){byId("sheetRoot").innerHTML=""}
+function sheet(html,bind){
+  byId("sheetRoot").innerHTML=`<div class="scrim" id="scrim"><div class="sheet" role="dialog" aria-modal="true">${html}</div></div>`;
+  byId("scrim").onclick=e=>{if(e.target.id==="scrim")closeSheet()};bind&&bind()}
+let TG=null;
+function dayTG(){return{kind:"day",get:()=>S.day.items,set:a=>{S.day.items=a},save:()=>saveDay(),tgt:()=>target()}}
+function planTG(d){return{kind:"plan",d,get:()=>S.plan.days[d],set:a=>{S.plan.days[d]=a},save:()=>{savePlan();if(!S.dayEdited&&wd(S.date)===d)S.day.items=planItems(S.date)},tgt:()=>targetFor(!!S.body.train.days[d])}}
+function previewLine(d){const t=TG.tgt(),s=sumItems(TG.get());
+  return `Η μέρα: <b>${r0(s.k+d.k)}</b> / ${r0(t.k)} kcal · <b class="pr">${r1(s.p+d.p)}</b> / ${r0(t.p)} γρ. · Υ ${r0(s.c+d.c)} · Λ ${r0(s.f+d.f)}`}
+const nv=n=>`${r0(n.k)} kcal · <b>${r1(n.p)} π.</b> · ${r0(n.c)} υ. · ${r0(n.f)} λ.`;
+
+function pickerHTML(slot,q){
+  const ql=q.trim().toLowerCase();
+  const meals=S.lib.meals.filter(m=>!ql||m.name.toLowerCase().includes(ql)).sort((a,b)=>(b.s?.includes(slot)?1:0)-(a.s?.includes(slot)?1:0));
+  const foods=S.lib.foods.filter(f=>!ql||f.name.toLowerCase().includes(ql));
+  const mv=m=>{const n=mealNutr(m);return `${r0(n.k)} kcal · <b>${r1(n.p)} γρ.</b>`};
+  const fv=f=>`${f.kcal} kcal · <b>${f.p} γρ.</b> <span class="muted">/${f.u==="g"?"100γρ":esc(f.pn||"τεμ.")}</span>`;
+  return `<span class="label">Γεύματα</span><div class="opts">${meals.map(m=>`<button class="opt" data-pm="${m.id}"><span>${esc(m.name)}</span><span class="v">${mv(m)}</span></button>`).join("")||'<span class="note">Κανένα.</span>'}</div>
+  <span class="label">Τρόφιμα</span><div class="opts">${foods.map(f=>`<button class="opt" data-pf="${f.id}"><span>${esc(f.name)}${f.est?' <span class="est">εκτίμηση</span>':""}</span><span class="v">${fv(f)}</span></button>`).join("")||'<span class="note">Κανένα.</span>'}</div>`}
+
+function openAddSheet(slot,replaceId){
+  const old=replaceId?TG.get().find(x=>x.id===replaceId):null, on=old?itemNutr(old):Z();
+  let q="";
+  const draw=()=>{byId("pick").innerHTML=pickerHTML(slot,q);bindPick()};
+  const bindPick=()=>{
+    byId("pick").querySelectorAll("[data-pm]").forEach(b=>b.onclick=()=>commit({type:"meal",ref:b.dataset.pm,qty:1}));
+    byId("pick").querySelectorAll("[data-pf]").forEach(b=>b.onclick=()=>askQty(food(b.dataset.pf)))};
+  const commit=it=>{if(old){for(const k of Object.keys(old))if(!["id","slot"].includes(k))delete old[k];Object.assign(old,it)}else TG.get().push({id:uid(),slot,...it});TG.save();closeSheet();render()};
+  const askQty=f=>{const def=f.u==="g"?100:1;
+    sheet(`<h2>${esc(f.name)}</h2><div class="preview" id="pv"></div>
+      <div class="stepper"><button class="btn" id="qm">−</button><input id="qty" type="number" inputmode="decimal" value="${def}" step="${f.u==="g"?5:.5}"><button class="btn" id="qp">+</button><span class="muted">${f.u==="g"?"γρ.":esc(f.pn||"τεμ.")}</span></div>
+      <div class="row"><button class="btn primary" id="ok">${old?"Αντικατάσταση":"Προσθήκη"}</button><button class="btn" id="cancel">Άκυρο</button></div>`,()=>{
+      const upd=()=>{const v=+byId("qty").value||0,n=foodNutr(f,v);byId("pv").innerHTML=nv(n)+"<br>"+previewLine({k:n.k-on.k,p:n.p-on.p,c:n.c-on.c,f:n.f-on.f})};
+      const st=f.u==="g"?5:.5;byId("qm").onclick=()=>{byId("qty").value=Math.max(0,(+byId("qty").value||0)-st);upd()};byId("qp").onclick=()=>{byId("qty").value=(+byId("qty").value||0)+st;upd()};
+      byId("qty").oninput=upd;upd();byId("cancel").onclick=closeSheet;
+      byId("ok").onclick=()=>{const v=+byId("qty").value;if(v>0)commit({type:"food",ref:f.id,qty:v})}})};
+  sheet(`<div class="row between"><h2>${old?"Αλλαγή":"Προσθήκη"} · ${TG.kind==="plan"?DAYS[TG.d]+" · ":""}${SLOTS[slot].n}</h2><button class="btn ghost" id="x">Κλείσιμο</button></div>
+    <button class="btn" id="scanBtn">Σάρωση barcode</button>
+    <input id="q" placeholder="Αναζήτηση (π.χ. τόνος, αυγό)" autocomplete="off"><div id="pick" style="display:flex;flex-direction:column;gap:8px"></div>`,()=>{
+    byId("x").onclick=closeSheet;byId("q").oninput=e=>{q=e.target.value;draw()};draw();
+    byId("scanBtn").onclick=()=>startScan(slot,replaceId)})}
+
+function openItemSheet(id){
+  const it=TG.get().find(x=>x.id===id);if(!it)return;
+  const isMeal=it.type==="meal",isCustom=it.type==="custom",f=it.type==="food"?food(it.ref):null,st=(isMeal||isCustom)?.5:(f&&f.u==="g"?5:.5);
+  const base=itemNutr(it);
+  const unitLbl=isMeal||isCustom?"Μερίδες":"Ποσότητα ("+(f&&f.u==="g"?"γρ.":esc(f?.pn||"τεμ."))+")";
+  sheet(`<div class="row between"><span class="label">${TG.kind==="plan"?DAYS[TG.d]+" · ":""}${SLOTS[it.slot].n}</span><button class="btn ghost" id="x">Κλείσιμο</button></div>
+    <h2>${esc(itemName(it))}</h2><div class="preview" id="pv"></div>
+    <div class="field"><span>${unitLbl}</span>
+    <div class="stepper"><button class="btn" id="qm">−</button><input id="qty" type="number" inputmode="decimal" step="${st}" value="${it.qty||1}"><button class="btn" id="qp">+</button></div></div>
+    <div class="row"><button class="btn primary" id="ok">Αποθήκευση</button><button class="btn" id="swap">Αλλαγή με άλλο</button><button class="btn danger" id="del">Αφαίρεση</button></div>`,()=>{
+    const calc=v=>itemNutr({...it,qty:v});
+    const upd=()=>{const v=+byId("qty").value||0,n=calc(v);byId("pv").innerHTML=nv(n)+"<br>"+previewLine({k:n.k-base.k,p:n.p-base.p,c:n.c-base.c,f:n.f-base.f})};
+    byId("qm").onclick=()=>{byId("qty").value=Math.max(0,(+byId("qty").value||0)-st);upd()};byId("qp").onclick=()=>{byId("qty").value=(+byId("qty").value||0)+st;upd()};
+    byId("qty").oninput=upd;upd();byId("x").onclick=closeSheet;
+    byId("ok").onclick=()=>{const v=+byId("qty").value;if(v>0){it.qty=v;TG.save()}closeSheet();render()};
+    byId("del").onclick=()=>{TG.set(TG.get().filter(x=>x.id!==id));TG.save();closeSheet();render()};
+    byId("swap").onclick=()=>openAddSheet(it.slot,id)})}
+
+/* ---------- Σάρωση barcode (Open Food Facts, δωρεάν) ---------- */
+const num=x=>Math.max(0,+x||0);
+let ZX=null;
+function loadZXing(){if(window.ZXing)return Promise.resolve();if(ZX)return ZX;
+  ZX=new Promise((ok,bad)=>{const sc=document.createElement("script");sc.src="https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3/umd/index.min.js";sc.onload=ok;sc.onerror=()=>{ZX=null;bad()};document.head.appendChild(sc)});return ZX}
+function startScan(slot,replaceId){
+  let reader=null,stream=null,timer=null,done=false;
+  const stop=()=>{done=true;try{reader&&reader.reset()}catch(e){}if(stream)stream.getTracks().forEach(t=>t.stop());clearInterval(timer)};
+  const found=code=>{if(done)return;stop();lookupBarcode(String(code).trim(),slot,replaceId)};
+  sheet(`<div class="row between"><h2>Σάρωση barcode</h2><button class="btn ghost" id="x">Κλείσιμο</button></div>
+    <video id="cam" playsinline muted autoplay style="width:100%;border-radius:12px;background:#000;aspect-ratio:4/3;object-fit:cover"></video>
+    <p class="note" id="scanMsg">Άνοιγμα κάμερας… Στόχευσε το barcode της συσκευασίας.</p>
+    <div class="row"><input id="bcIn" inputmode="numeric" placeholder="ή γράψε τον αριθμό" class="grow" style="width:auto"><button class="btn primary" id="bcGo">Αναζήτηση</button></div>`,()=>{
+    byId("x").onclick=()=>{stop();closeSheet()};
+    byId("scrim").onclick=e=>{if(e.target.id==="scrim"){stop();closeSheet()}};
+    byId("bcGo").onclick=()=>{const v=byId("bcIn").value.replace(/\D/g,"");if(v.length>=6)found(v)};
+    const msg=t=>{const m=byId("scanMsg");if(m)m.textContent=t};
+    (async()=>{
+      try{await loadZXing();if(done)return;
+        reader=new ZXing.BrowserMultiFormatReader();
+        await reader.decodeFromConstraints({video:{facingMode:"environment"}},"cam",(res)=>{if(res)found(res.getText())});
+        msg("Στόχευσε το barcode. Κράτα το κινητό σταθερό, 10–20 εκ. μακριά.");
+      }catch(e){
+        if("BarcodeDetector" in window){try{const det=new BarcodeDetector({formats:["ean_13","ean_8","upc_a","upc_e"]});
+          stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}});const v=byId("cam");v.srcObject=stream;await v.play();
+          timer=setInterval(async()=>{try{const r=await det.detect(v);if(r[0])found(r[0].rawValue)}catch(_){}} ,300);msg("Στόχευσε το barcode.");return}catch(_){}}
+        msg("Δεν άνοιξε η κάμερα. Επίτρεψε την κάμερα στις ρυθμίσεις, ή γράψε τον αριθμό κάτω από το barcode.")}})()})}
+async function lookupBarcode(code,slot,replaceId){
+  const mine=S.lib.foods.find(f=>f.bc===code);
+  if(mine){closeSheet();toast("Το έχεις ήδη: "+mine.name);openAddSheet(slot,replaceId);setTimeout(()=>{const b=document.querySelector(`[data-pf="${mine.id}"]`);if(b)b.click()},50);return}
+  sheet(`<h2>Αναζήτηση ${esc(code)}…</h2><p class="note">Ψάχνω το προϊόν στη βάση Open Food Facts.</p>`);
+  let r={found:false,name:"",per100:{},serving:null};
+  try{const res=await fetch("https://world.openfoodfacts.org/api/v2/product/"+encodeURIComponent(code)+"?fields=product_name,product_name_el,brands,nutriments,serving_quantity");
+    const j=await res.json();
+    if(j&&j.status===1&&j.product){const p=j.product,n=p.nutriments||{};
+      const kcal=n["energy-kcal_100g"]!=null?n["energy-kcal_100g"]:(n["energy_100g"]!=null?n["energy_100g"]/4.184:null);
+      r={found:true,name:[(p.product_name_el||p.product_name||"").trim(),(p.brands||"").split(",")[0].trim()].filter(Boolean).join(" "),
+        per100:{kcal,p:n.proteins_100g,c:n.carbohydrates_100g,f:n.fat_100g},serving:num(p.serving_quantity)||null}}}
+  catch(e){sheet(`<h2>Χωρίς σύνδεση</h2><p class="note">Η αναζήτηση barcode θέλει ίντερνετ. Μπορείς να συμπληρώσεις τις τιμές με το χέρι.</p><div class="row"><button class="btn primary" id="man">Συμπλήρωση</button><button class="btn" id="x">Κλείσιμο</button></div>`,
+    ()=>{byId("x").onclick=closeSheet;byId("man").onclick=()=>showLabel(r,slot,replaceId,code)});return}
+  showLabel(r,slot,replaceId,code)}
+function showLabel(r,slot,replaceId,code){
+  const p=r.per100;
+  sheet(`<div class="row between"><h2>${r.found?"Βρέθηκε":"Νέο προϊόν"}</h2><button class="btn ghost" id="x">Κλείσιμο</button></div>
+   <label class="field"><span>Όνομα</span><input id="ln" value="${esc(r.name||"Νέο προϊόν")}"></label>
+   ${r.found?"":`<p class="note">Το barcode ${esc(code||"")} δεν υπάρχει στη βάση Open Food Facts. Συμπλήρωσε τις τιμές από την ετικέτα: θα το θυμάμαι την επόμενη φορά.</p>`}<span class="label">Ανά 100 γρ. — έλεγξε ότι ταιριάζουν με την ετικέτα</span>
+   <div class="form">${[["kcal","Θερμίδες"],["p","Πρωτεΐνη"],["c","Υδατάνθρακες"],["f","Λιπαρά"]].map(([k,l])=>`<label class="field"><span>${l}</span><input id="l-${k}" type="number" inputmode="decimal" value="${r1(num(p[k]))}"></label>`).join("")}</div>
+   <label class="field"><span>Πόσα γραμμάρια έφαγες;</span><input id="lg" type="number" inputmode="decimal" value="${r.serving||100}"></label>
+   <div class="row"><button class="btn primary" id="addDay">Αποθήκευση & προσθήκη στο ${SLOTS[slot].n}</button><button class="btn" id="saveOnly">Μόνο αποθήκευση στα τρόφιμα</button></div>`,()=>{
+   byId("x").onclick=closeSheet;
+   const mk=()=>({id:uid(),name:byId("ln").value.trim()||"Νέο προϊόν",u:"g",kcal:num(byId("l-kcal").value),p:num(byId("l-p").value),c:num(byId("l-c").value),f:num(byId("l-f").value),pn:"",est:false,cat:"Άλλα",bc:code||null});
+   byId("saveOnly").onclick=()=>{const f=mk();S.lib.foods.push(f);saveLib();closeSheet();toast("Αποθηκεύτηκε στα τρόφιμα");render()};
+   byId("addDay").onclick=()=>{const f=mk();S.lib.foods.push(f);saveLib();const g=num(byId("lg").value)||100;
+     const it={type:"food",ref:f.id,qty:g};placeItems([it],slot,replaceId)}})}
+function placeItems(its,slot,replaceId){
+  if(replaceId){TG.set(TG.get().filter(x=>x.id!==replaceId))}
+  its.forEach(it=>TG.get().push({id:uid(),slot,...it}));TG.save();closeSheet();render();toast("Προστέθηκε στο "+SLOTS[slot].n)}
+
+/* ---------- Πρόγραμμα & ψώνια ---------- */
+function renderPlan(){
+  let h=`<div class="seg"><button id="sub-plan" class="${S.sub==="plan"?"on":""}">Πρόγραμμα</button><button id="sub-shop" class="${S.sub==="shop"?"on":""}">Λίστα για ψώνια</button></div>`;
+  if(S.sub==="shop"){main.innerHTML=h+shopHTML();bindPlanSeg();bindShop();return}
+  h+=`<p class="note">Κάθε μέρα ξεκινά από εδώ. Πάτα «+» για να βάλεις γεύμα ή τρόφιμο, ή πάτα κάτι για να αλλάξεις ποσότητα. Τις αλλαγές μιας συγκεκριμένης μέρας τις κάνεις στο «Σήμερα».</p>`;
+  DAYS.forEach((dn,d)=>{const row=S.plan.days[d].filter(validItem),s=sumItems(row),t=targetFor(!!S.body.train.days[d]),dk=s.k-t.k,dp=s.p-t.p;
+    h+=`<section class="card day"><div class="row between" style="padding-top:8px"><h3>${dn}${S.body.train.days[d]?' <span class="chip on" style="padding:2px 8px">Προπόνηση</span>':""}</h3>
+      <span class="tot">${r0(s.k)} (${dk>=0?"+":""}${r0(dk)}) · <b>${r1(s.p)}</b> (${dp>=0?"+":""}${r0(dp)})</span></div>`;
+    SLOTS.forEach((sl,i)=>{const its=row.filter(x=>x.slot===i),ss=sumItems(its);
+      h+=`<div class="slot"><div class="slot-head"><span class="t">${sl.n} <span class="muted small" style="font-weight:500">${sl.t}</span></span>
+        <span class="s">${its.length>1?`${r0(ss.k)} · <b>${r1(ss.p)}</b>`:its.length?"":"—"}</span><button class="plus" data-padd="${d}:${i}" aria-label="Προσθήκη στο ${dn} ${sl.n}">+</button></div>`;
+      its.forEach(it=>{const n=itemNutr(it),q=qtyLabel(it);
+        h+=`<button class="item" data-pedit="${d}:${it.id}"><span class="n">${esc(itemName(it))}${q?` <span class="q">${esc(q)}</span>`:""}</span><span class="v">${r0(n.k)} · <b>${r1(n.p)}</b></span></button>`});
+      h+=`</div>`});
+    h+=`</section>`});
+  main.innerHTML=h;bindPlanSeg();
+  main.querySelectorAll("[data-padd]").forEach(b=>b.onclick=()=>{const [d,i]=b.dataset.padd.split(":").map(Number);TG=planTG(d);openAddSheet(i)});
+  main.querySelectorAll("[data-pedit]").forEach(b=>b.onclick=()=>{const [d,id]=b.dataset.pedit.split(":");TG=planTG(+d);openItemSheet(id)})}
+function bindPlanSeg(){byId("sub-plan").onclick=()=>{S.sub="plan";render()};byId("sub-shop").onclick=async()=>{S.sub="shop";render();
+  const ws=weekStart(todayISO());await loadDocs([0,1,2,3,4,5,6,7,8,9,10,11,12,13].map(i=>addDays(ws,i)));if(S.tab==="plan"&&S.sub==="shop")render()}}
+function shopDates(){const t=todayISO(),ws=weekStart(t);
+  if(S.shopRange==="rest")return Array.from({length:7-wd(t)},(_,i)=>addDays(t,i));
+  if(S.shopRange==="next")return [0,1,2,3,4,5,6].map(i=>addDays(ws,7+i));
+  return [0,1,2,3,4,5,6].map(i=>addDays(ws,i))}
+function shopAgg(){
+  const agg={},noIng=new Set();
+  const addF=(id,q)=>{agg[id]=(agg[id]||0)+q};
+  for(const d of shopDates())for(const it of dayItems(d)){
+    if(it.type==="food")addF(it.ref,it.qty);
+    else if(it.type==="meal"){const m=meal(it.ref);if(!m)continue;const parts=m.parts&&m.parts.length?m.parts:m.ing;
+      if(parts&&parts.length)parts.forEach(p=>addF(p.food,p.qty*it.qty));else noIng.add(m.name)}}
+  return{agg,noIng:[...noIng]}}
+function fmtQty(f,q){if(f.u==="g"){if(q>=1000){const kg=Math.round(q/10)/100;return kg.toLocaleString("el-GR")+(kg===1?" κιλό":" κιλά")}return Math.ceil(q/10)*10+" γρ."}
+  const n=Math.ceil(q-1e-9);const pn=(f.pn||"τεμ.").split(" ")[0];return n+" "+(pn==="φέτα"?(n===1?"φέτα":"φέτες"):pn==="κονσέρβα"?(n===1?"κονσέρβα":"κονσέρβες"):pn)}
+function shopKey(){return "shop:"+S.shopRange+":"+shopDates()[0]}
+function shopHTML(){
+  const {agg,noIng}=shopAgg(),done=lsGet(shopKey())||{};
+  const groups={};for(const [id,q] of Object.entries(agg)){const f=food(id);if(!f||q<=0)continue;(groups[f.cat||"Άλλα"]=groups[f.cat||"Άλλα"]||[]).push({f,q})}
+  const ds=shopDates();
+  let h=`<section class="card"><label class="field"><span>Για</span><select id="shopRange">
+    <option value="rest" ${S.shopRange==="rest"?"selected":""}>Από σήμερα ως Κυριακή</option><option value="week" ${S.shopRange==="week"?"selected":""}>Όλη αυτή την εβδομάδα</option><option value="next" ${S.shopRange==="next"?"selected":""}>Την επόμενη εβδομάδα</option></select></label>
+    <p class="note">${fmtD(ds[0])} – ${fmtD(ds[ds.length-1])} · από το πρόγραμμα και τις αλλαγές που έχεις ήδη κάνει. Οι ποσότητες είναι ωμό βάρος, όπως στο πρόγραμμά σου.</p>
+    <div class="row"><button class="btn sm" id="copyShop">Αντιγραφή λίστας</button><button class="btn sm ghost" id="clearShop">Ξετσέκαρε όλα</button></div></section>`;
+  for(const c of CATS){const g=groups[c];if(!g)continue;g.sort((a,b)=>a.f.name.localeCompare(b.f.name,"el"));
+    h+=`<section class="card" style="gap:0"><span class="label" style="padding-bottom:4px">${c}</span>${g.map(({f,q})=>`<label class="shop ${done[f.id]?"done":""}"><input type="checkbox" data-sh="${f.id}" ${done[f.id]?"checked":""}><span class="n">${esc(f.name)}</span><span class="q">${fmtQty(f,q)}</span></label>`).join("")}</section>`}
+  if(noIng.length)h+=`<p class="note">Χωρίς υλικά (πρόσθεσέ τα στο γεύμα για να μπουν στη λίστα): ${noIng.map(esc).join(", ")}.</p>`;
+  return h}
+function bindShop(){
+  byId("shopRange").onchange=e=>{S.shopRange=e.target.value;render()};
+  main.querySelectorAll("[data-sh]").forEach(c=>c.onchange=()=>{const k=shopKey(),d=lsGet(k)||{};d[c.dataset.sh]=c.checked;lsSet(k,d);c.closest(".shop").classList.toggle("done",c.checked)});
+  byId("clearShop").onclick=()=>{lsSet(shopKey(),{});render()};
+  byId("copyShop").onclick=async()=>{const {agg}=shopAgg();const done=lsGet(shopKey())||{};
+    const lines=[];for(const c of CATS){const g=Object.entries(agg).map(([id,q])=>({f:food(id),q})).filter(x=>x.f&&x.q>0&&(x.f.cat||"Άλλα")===c&&!done[x.f.id]);if(!g.length)continue;lines.push(c+":");g.forEach(x=>lines.push("- "+x.f.name+" "+fmtQty(x.f,x.q)))}
+    const txt=lines.join("\n");try{await navigator.clipboard.writeText(txt);toast("Η λίστα αντιγράφηκε")}catch(e){sheet(`<h2>Αντιγραφή</h2><textarea id="ta" style="width:100%;height:240px;font:inherit;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:8px">${esc(txt)}</textarea><button class="btn" id="x">Κλείσιμο</button>`,()=>{byId("ta").select();byId("x").onclick=closeSheet})}}}
+
+/* ---------- Τρόφιμα ---------- */
+function renderFoods(){
+  const ql=S.foodQ.trim().toLowerCase();
+  const foods=S.lib.foods.filter(f=>!ql||f.name.toLowerCase().includes(ql));
+  const meals=S.lib.meals.filter(m=>!ql||m.name.toLowerCase().includes(ql));
+  let h=`<input id="fq" placeholder="Αναζήτηση" value="${esc(S.foodQ)}" autocomplete="off">
+  <section class="card" style="gap:4px"><div class="row between"><h3>Τρόφιμα</h3><div class="row"><button class="btn sm" id="labelScan">Barcode</button><button class="btn sm primary" id="newFood">+ Νέο</button></div></div>
+  <div class="list">${foods.map(f=>`<div class="li"><span class="n">${esc(f.name)}${f.est?' <span class="est">εκτίμηση</span>':""}</span>
+   <span class="v">${f.kcal} · <b>${f.p}</b> · ${f.c??0} · ${f.f??0}<br><span class="muted">ανά ${f.u==="g"?"100 γρ.":esc(f.pn||"τεμ.")}</span></span><button class="btn sm" data-ef="${f.id}">Επεξ.</button></div>`).join("")}</div>
+   <p class="note">Σειρά τιμών: θερμίδες · <span class="pr">πρωτεΐνη</span> · υδατάνθρακες · λιπαρά. «Εκτίμηση» σημαίνει συνηθισμένες τιμές που έβαλα εγώ: διόρθωσέ τες από τη συσκευασία.</p></section>
+  <section class="card" style="gap:4px"><div class="row between"><h3>Γεύματα</h3><button class="btn sm primary" id="newMeal">+ Νέο</button></div>
+  <div class="list">${meals.map(m=>{const n=mealNutr(m);return `<div class="li"><span class="n">${esc(m.name)}</span>
+   <span class="v">${r0(n.k)} · <b>${r1(n.p)}</b> · ${r0(n.c)} · ${r0(n.f)}</span><button class="btn sm" data-em="${m.id}">Επεξ.</button></div>`}).join("")}</div></section>`;
+  main.innerHTML=h;
+  byId("fq").oninput=e=>{S.foodQ=e.target.value;const pos=e.target.selectionStart;renderFoods();const n=byId("fq");n.focus();n.setSelectionRange(pos,pos)};
+  byId("newFood").onclick=()=>editFood(null);byId("newMeal").onclick=()=>editMeal(null);
+  byId("labelScan").onclick=()=>{TG=dayTG();startScan(5,null)};
+  main.querySelectorAll("[data-ef]").forEach(b=>b.onclick=()=>editFood(b.dataset.ef));
+  main.querySelectorAll("[data-em]").forEach(b=>b.onclick=()=>editMeal(b.dataset.em))}
+
+function editFood(id){
+  const f=id?food(id):{id:uid(),name:"",u:"g",kcal:"",p:"",c:"",f:"",pn:"",est:false,cat:"Άλλα"};
+  sheet(`<div class="row between"><h2>${id?"Επεξεργασία":"Νέο"} τρόφιμο</h2><button class="btn ghost" id="x">Κλείσιμο</button></div>
+   <label class="field"><span>Όνομα</span><input id="fn" value="${esc(f.name)}"></label>
+   <div class="form"><label class="field"><span>Οι τιμές είναι</span><select id="fu"><option value="g" ${f.u==="g"?"selected":""}>ανά 100 γρ.</option><option value="pc" ${f.u==="pc"?"selected":""}>ανά τεμάχιο / φέτα / κουταλιά</option></select></label>
+   <label class="field"><span>Κατηγορία (για τα ψώνια)</span><select id="fcat">${CATS.map(c=>`<option ${f.cat===c?"selected":""}>${c}</option>`).join("")}</select></label></div>
+   <label class="field" id="pnw"><span>Όνομα μονάδας (π.χ. φέτα 25γρ)</span><input id="fpn" value="${esc(f.pn)}"></label>
+   <div class="form">${[["fk","Θερμίδες",f.kcal],["fp","Πρωτεΐνη (γρ.)",f.p],["fc","Υδατάνθρακες (γρ.)",f.c],["ff","Λιπαρά (γρ.)",f.f]].map(([i,l,v])=>`<label class="field"><span>${l}</span><input id="${i}" type="number" inputmode="decimal" value="${v??""}"></label>`).join("")}</div>
+   <div class="row"><button class="btn primary" id="ok">Αποθήκευση</button>${id?'<button class="btn danger" id="del">Διαγραφή</button>':""}</div><div id="delc"></div>`,()=>{
+   const sync=()=>{byId("pnw").hidden=byId("fu").value!=="pc"};byId("fu").onchange=sync;sync();byId("x").onclick=closeSheet;
+   byId("ok").onclick=()=>{const name=byId("fn").value.trim(),k=+byId("fk").value;if(!name||!(k>=0)||byId("fk").value===""){toast("Συμπλήρωσε όνομα και θερμίδες");return}
+     Object.assign(f,{name,u:byId("fu").value,kcal:k,p:num(byId("fp").value),c:num(byId("fc").value),f:num(byId("ff").value),pn:byId("fpn").value.trim(),est:false,cat:byId("fcat").value});if(!id)S.lib.foods.push(f);saveLib();closeSheet();render()};
+   const d=byId("del");if(d)d.onclick=()=>{byId("delc").innerHTML=`<div class="row"><span class="small">Σίγουρα;</span><button class="btn danger sm" id="dy">Ναι, διαγραφή</button></div>`;
+     const used=foodUsage(id);
+     byId("delc").innerHTML=`<div class="card" style="gap:8px"><span class="small">${used.length?"Χρησιμοποιείται σε: "+used.map(esc).join(", ")+".":"Δεν χρησιμοποιείται κάπου."}</span>
+       <label class="field"><span>Αντικατάσταση παντού με (προαιρετικό)</span><select id="repl"><option value="">— Καμία, απλώς αφαίρεση —</option>${S.lib.foods.filter(x=>x.id!==id).map(x=>`<option value="${x.id}">${esc(x.name)}</option>`).join("")}</select></label>
+       <p class="note">Φεύγει από το πρόγραμμα, από σήμερα και τις επόμενες μέρες. Γεύματα που έχουν μόνο αυτό το τρόφιμο σβήνονται κι αυτά. Οι περασμένες μέρες κρατάνε τα νούμερά τους.</p>
+       <button class="btn danger" id="dy">Διαγραφή</button></div>`;
+     byId("dy").onclick=async()=>{byId("dy").disabled=true;await deleteFood(id,byId("repl").value||null);closeSheet();render();toast("Διαγράφηκε")}}})}
+
+function editMeal(id){
+  const m=id?JSON.parse(JSON.stringify(meal(id))):{id:uid(),name:"",kcal:0,p:0,c:0,f:0,s:[],parts:[],ing:null};
+  let mode=m.parts&&m.parts.length?"parts":id?"fixed":"parts";if(!m.parts)m.parts=[];if(!m.ing)m.ing=[];
+  const list=()=>mode==="parts"?m.parts:m.ing;
+  const draw=()=>{
+    const n=mode==="parts"?mealNutr({parts:m.parts}):{k:+m.kcal||0,p:+m.p||0,c:+m.c||0,f:+m.f||0};
+    const rows=list();
+    sheet(`<div class="row between"><h2>${id?"Επεξεργασία":"Νέο"} γεύμα</h2><button class="btn ghost" id="x">Κλείσιμο</button></div>
+     <label class="field"><span>Όνομα / περιγραφή</span><input id="mn" value="${esc(m.name)}"></label>
+     <div class="seg"><button id="mfix" class="${mode==="fixed"?"on":""}">Με σύνολα</button><button id="mpar" class="${mode==="parts"?"on":""}">Υπολογισμός από υλικά</button></div>
+     ${mode==="fixed"?`<div class="form">${[["mk","Θερμίδες",m.kcal],["mp","Πρωτεΐνη",m.p],["mc","Υδατάνθρακες",m.c],["mf","Λιπαρά",m.f]].map(([i,l,v])=>`<label class="field"><span>${l}</span><input id="${i}" type="number" inputmode="decimal" value="${v??0}"></label>`).join("")}</div>`:""}
+     <span class="label">${mode==="parts"?"Υλικά":"Υλικά για τη λίστα ψωνιών"}</span>
+     <div class="opts">${rows.map((pt,i)=>{const f=food(pt.food);return `<div class="pitem"><span>${esc(f?f.name:"?")} <span class="muted small">${f&&f.u==="g"?"γρ.":esc(f?.pn||"τεμ.")}</span></span><input type="number" inputmode="decimal" id="pq-${i}" data-pq="${i}" value="${pt.qty}"><button class="btn sm danger" data-pr="${i}" aria-label="Αφαίρεση">×</button></div>`}).join("")||'<span class="note">Κανένα υλικό ακόμα.</span>'}</div>
+     <select id="addPart"><option value="">+ Πρόσθεσε υλικό…</option>${S.lib.foods.map(f=>`<option value="${f.id}">${esc(f.name)}</option>`).join("")}</select>
+     <div class="tot">Σύνολο: ${nv(n)}</div>
+     <div class="field"><span>Ταιριάζει για</span><div class="row">${SLOTS.map((s,i)=>`<label class="chip"><input type="checkbox" id="ms-${i}" data-ms="${i}" ${m.s?.includes(i)?"checked":""}> ${s.n} ${s.t}</label>`).join("")}</div></div>
+     <div class="row"><button class="btn primary" id="ok">Αποθήκευση</button>${id?'<button class="btn danger" id="del">Διαγραφή</button>':""}</div><div id="delc"></div>`,bind)};
+  const grab=()=>{m.name=byId("mn").value;if(byId("mk")){m.kcal=num(byId("mk").value);m.p=num(byId("mp").value);m.c=num(byId("mc").value);m.f=num(byId("mf").value)}
+    document.querySelectorAll("[data-pq]").forEach(i=>list()[+i.dataset.pq].qty=num(i.value));
+    m.s=[...document.querySelectorAll("[data-ms]")].filter(c=>c.checked).map(c=>+c.dataset.ms)};
+  const bind=()=>{byId("x").onclick=closeSheet;
+    byId("mfix").onclick=()=>{grab();if(mode==="parts"&&m.parts.length){const n=mealNutr({parts:m.parts});Object.assign(m,{kcal:r1(n.k),p:r1(n.p),c:r1(n.c),f:r1(n.f)});m.ing=m.parts.map(x=>({...x}))}mode="fixed";draw()};
+    byId("mpar").onclick=()=>{grab();if(mode==="fixed"&&!m.parts.length&&m.ing.length)m.parts=m.ing.map(x=>({...x}));mode="parts";draw()};
+    ["mk","mp","mc","mf"].forEach(k=>{const e=byId(k);if(e)e.onchange=()=>{grab();draw()}});
+    document.querySelectorAll("[data-pq]").forEach(i=>i.onchange=()=>{grab();draw()});
+    document.querySelectorAll("[data-pr]").forEach(b=>b.onclick=()=>{grab();list().splice(+b.dataset.pr,1);draw()});
+    byId("addPart").onchange=e=>{grab();const f=food(e.target.value);if(f){list().push({food:f.id,qty:f.u==="g"?100:1});draw()}};
+    byId("ok").onclick=()=>{grab();if(!m.name.trim()){toast("Δώσε όνομα στο γεύμα");return}
+      const fin={id:m.id,name:m.name.trim(),s:m.s,parts:mode==="parts"&&m.parts.length?m.parts:null,ing:mode==="fixed"&&m.ing.length?m.ing:null,kcal:m.kcal,p:m.p,c:m.c,f:m.f};
+      if(fin.parts){const n=mealNutr(fin);Object.assign(fin,{kcal:r1(n.k),p:r1(n.p),c:r1(n.c),f:r1(n.f)})}
+      if(id){const ix=S.lib.meals.findIndex(x=>x.id===id);S.lib.meals[ix]=fin}else S.lib.meals.push(fin);saveLib();closeSheet();render();toast("Αποθηκεύτηκε")};
+    const d=byId("del");if(d)d.onclick=()=>{byId("delc").innerHTML=`<div class="row"><span class="small">Θα φύγει από το πρόγραμμα και από σήμερα και μετά. Οι περασμένες μέρες κρατάνε τα νούμερά τους. Σίγουρα;</span><button class="btn danger sm" id="dy">Ναι, διαγραφή</button></div>`;
+      byId("dy").onclick=async()=>{await deleteMeal(id);closeSheet();render();toast("Διαγράφηκε")}}};
+  draw()}
+
+/* ---------- Διαγραφές που καθαρίζουν παντού ---------- */
+const ingOf=m=>(m.parts&&m.parts.length?m.parts:m.ing)||[];
+function snapshot(it){const n=itemNutr(it);return{id:it.id,slot:it.slot,type:"custom",name:itemName(it),kcal:r1(n.k),p:r1(n.p),c:r1(n.c),f:r1(n.f),qty:1}}
+function foodUsage(id){const out=[];S.lib.meals.forEach(m=>{if(ingOf(m).some(x=>x.food===id))out.push("γεύμα «"+m.name+"»")});
+  const dn=DAYS.filter((_,d)=>S.plan.days[d].some(it=>it.type==="food"&&it.ref===id));if(dn.length)out.push("πρόγραμμα ("+dn.join(", ")+")");return out}
+async function applyEverywhere(mapItem){
+  if(!S.allLoaded)await loadAllDays();
+  const today=todayISO();
+  S.plan.days=S.plan.days.map(row=>row.flatMap(it=>mapItem(it,false)));savePlan();
+  for(const [d,doc] of Object.entries(S.docs)){if(d===S.date||!doc||!doc.edited||!Array.isArray(doc.items))continue;
+    const before=JSON.stringify(doc.items),items=doc.items.flatMap(it=>mapItem(it,d<today));
+    if(JSON.stringify(items)!==before){const nd={...doc,items};S.docs[d]=nd;save("day:"+d,nd)}}
+  if(S.dayEdited){S.day.items=S.day.items.flatMap(it=>mapItem(it,S.date<today));saveDay(false)}}
+async function deleteFood(id,replId){
+  const R=replId?food(replId):null;
+  const single=new Set(S.lib.meals.filter(m=>{const L=ingOf(m);return L.length===1&&L[0].food===id}).map(m=>m.id));
+  await applyEverywhere((it,past)=>{
+    const hitF=it.type==="food"&&it.ref===id,hitM=it.type==="meal"&&single.has(it.ref);
+    if(!hitF&&!hitM)return[it];
+    if(past)return[snapshot(it)];
+    if(!R)return[];
+    if(hitF)return[{...it,ref:R.id}];
+    return[{id:it.id,slot:it.slot,type:"food",ref:R.id,qty:ingOf(meal(it.ref))[0].qty*(it.qty||1)}]});
+  S.lib.meals=S.lib.meals.filter(m=>!single.has(m.id));
+  S.lib.meals.forEach(m=>["parts","ing"].forEach(k=>{if(!Array.isArray(m[k]))return;if(R)m[k].forEach(x=>{if(x.food===id)x.food=R.id});else m[k]=m[k].filter(x=>x.food!==id)}));
+  S.lib.foods=S.lib.foods.filter(f=>f.id!==id);saveLib();
+  if(!S.dayEdited)S.day.items=planItems(S.date)}
+async function deleteMeal(id){
+  await applyEverywhere((it,past)=>it.type==="meal"&&it.ref===id?(past?[snapshot(it)]:[]):[it]);
+  S.lib.meals=S.lib.meals.filter(m=>m.id!==id);saveLib();
+  if(!S.dayEdited)S.day.items=planItems(S.date)}
+
+/* ---------- Το σώμα μου ---------- */
+function renderBody(){
+  const pr=S.body.profile,c=bodyCalc();
+  const fld=(k,label,extra="")=>`<label class="field"><span>${label}</span><input id="b-${k}" data-b="${k}" type="number" inputmode="decimal" value="${esc(pr[k])}" ${extra}></label>`;
+  let h=`<section class="card"><h3>Στοιχεία</h3>
+   <div class="form">
+    <label class="field"><span>Φύλο</span><select id="b-sex" data-b="sex"><option value="m" ${pr.sex!=="f"?"selected":""}>Άνδρας</option><option value="f" ${pr.sex==="f"?"selected":""}>Γυναίκα</option></select></label>
+    ${fld("age","Ηλικία")}${fld("height","Ύψος (εκ.)")}${fld("weight","Βάρος (κιλά)",'step="0.1"')}</div>
+   <label class="field"><span>Δραστηριότητα</span><select id="b-activity" data-b="activity">
+    ${[["1.2","Καθιστική, χωρίς γυμναστική"],["1.375","Ελαφριά: 1–3 προπονήσεις/εβδ."],["1.55","Μέτρια: 3–5 προπονήσεις/εβδ."],["1.725","Υψηλή: 6–7 προπονήσεις/εβδ. ή όρθια δουλειά + γυμναστική"],["1.9","Πολύ υψηλή: βαριά σωματική δουλειά + καθημερινή προπόνηση"]]
+     .map(([v,l])=>`<option value="${v}" ${pr.activity===v?"selected":""}>${l}</option>`).join("")}</select></label>
+   <span class="label">Μετρήσεις με μεζούρα (εκ.)</span>
+   <div class="form">${fld("neck","Λαιμός",'step="0.5"')}${fld("waist","Μέση (αφαλός)",'step="0.5"')}${pr.sex==="f"?fld("hip","Γοφοί",'step="0.5"'):""}${fld("chest","Στήθος",'step="0.5"')}${fld("arm","Μπράτσο",'step="0.5"')}${fld("thigh","Μηρός",'step="0.5"')}</div>
+   <p class="note">Λαιμός: κάτω από το καρύδι. Μέση: στο ύψος του αφαλού, χαλαρή κοιλιά, μετά την εκπνοή. Μέτρα το πρωί πριν το φαγητό.</p>
+   <button class="btn primary" id="logMeas" style="align-self:flex-start">Καταγραφή σημερινής μέτρησης</button></section>`;
+  if(!c.ok)h+=`<section class="card"><p class="note">Συμπλήρωσε ηλικία, ύψος και βάρος για να δεις θερμίδες συντήρησης, γράμμωσης και όγκου.</p></section>`;
+  else h+=`<section class="card"><h3>Αποτελέσματα</h3><div class="stats">
+     <div class="stat"><span class="label">Λίπος σώματος</span><span class="x">${c.bf?r1(c.bf)+"%":"—"}</span><span class="small muted">${c.bf?"μέθοδος US Navy":"βάλε λαιμό & μέση"}</span></div>
+     <div class="stat"><span class="label">Άλιπη μάζα</span><span class="x">${c.lbm?r1(c.lbm)+" κ.":"—"}</span><span class="small muted">${c.fat?"λίπος "+r1(c.fat)+" κ.":""}</span></div>
+     <div class="stat"><span class="label">Μεταβολισμός</span><span class="x">${r0(c.bmr)}</span><span class="small muted">kcal σε ηρεμία</span></div>
+     <div class="stat"><span class="label">ΔΜΣ</span><span class="x">${r1(c.bmi)}</span><span class="small muted">${c.whtr?"μέση/ύψος "+c.whtr.toFixed(2):""}</span></div></div>
+     <span class="label">Διάλεξε στόχο</span><div class="goals">${["cut","maint","bulk"].map(g=>{const o=c.goals[g];return `<button class="goal ${S.body.goal===g?"on":""}" data-goal="${g}"><b>${o.label}</b><span class="gk">${r0(o.k/10)*10} kcal</span><span class="gp">${r0(o.p)} γρ. πρωτεΐνη</span><span class="small muted">${o.sub}</span></button>`}).join("")}</div>
+     <label class="chip" style="align-self:flex-start;padding:6px 10px"><input type="checkbox" id="useBody" ${S.body.targetMode==="body"?"checked":""}> Χρήση αυτού του στόχου στο «Σήμερα»</label>
+     <p class="note">Εκτίμηση${c.katch?" (μέσος όρος Mifflin-St Jeor και Katch-McArdle)":" (Mifflin-St Jeor)"}. Μετά από 2–3 εβδομάδες κοίτα την πορεία του βάρους: αν μένει σταθερό ενώ θες γράμμωση, κατέβασε 150–200 kcal.</p></section>`;
+  const tr=S.body.train;
+  h+=`<section class="card"><h3>Στόχος & προπονήσεις</h3>
+    <div class="form"><label class="field"><span>Θερμίδες (χειροκίνητα)</span><input id="mk2" type="number" inputmode="decimal" value="${S.body.manual.kcal}" ${S.body.targetMode==="body"?"disabled":""}></label>
+    <label class="field"><span>Πρωτεΐνη (γρ.)</span><input id="mp2" type="number" inputmode="decimal" value="${S.body.manual.p}" ${S.body.targetMode==="body"?"disabled":""}></label>
+    <label class="field"><span>Λιπαρά (% θερμίδων)</span><input id="fat2" type="number" inputmode="decimal" value="${S.body.fatPct}"></label>
+    <label class="field"><span>Μέρα προπόνησης: + kcal</span><input id="tex" type="number" inputmode="decimal" step="50" value="${tr.extra}"></label></div>
+    <div class="field"><span>Συνήθεις μέρες προπόνησης</span><div class="days7">${DSH.map((d,i)=>`<label class="chip ${tr.days[i]?"on":""}"><input type="checkbox" id="td-${i}" data-td="${i}" ${tr.days[i]?"checked":""}> ${d}</label>`).join("")}</div></div>
+    <p class="note">${S.body.targetMode==="body"?"Τώρα χρησιμοποιείται ο στόχος από τα στοιχεία σου.":"Τώρα χρησιμοποιείται ο χειροκίνητος στόχος."} Στις μέρες προπόνησης ο στόχος ανεβαίνει κατά ${r0(+tr.extra||0)} kcal (κυρίως υδατάνθρακες). Αλλάζεις μια συγκεκριμένη μέρα από το κουμπί στο «Σήμερα».</p></section>`;
+  h+=`<section class="card"><h3>Λογαριασμός & αντίγραφα</h3>
+    <p class="note">${AUTH.s?"Συνδεδεμένος ως <b>"+esc(AUTH.s.user&&AUTH.s.user.email||"")+"</b>. Τα δεδομένα συγχρονίζονται με τη βάση.":"Χωρίς λογαριασμό: τα δεδομένα είναι μόνο σε αυτή τη συσκευή."}</p>
+    <div class="row">${AUTH.s?'<button class="btn sm" id="logout">Αποσύνδεση</button>':'<button class="btn sm primary" id="login">Σύνδεση</button>'}<button class="btn sm" id="bkDown">Λήψη αντιγράφου</button><button class="btn sm" id="bkUp">Επαναφορά από αρχείο</button></div></section>`;
+  h+=`<section class="card"><h3>Πορεία διατροφής</h3><div id="nutriHist"><p class="note">Φόρτωση…</p></div></section>`;
+  const hist=S.body.history;
+  h+=`<section class="card"><h3>Πορεία σώματος</h3>`;
+  if(!hist.length)h+=`<p class="note">Δεν έχεις καταγράψει μέτρηση ακόμα. Κάνε μία την εβδομάδα, ίδια μέρα και ώρα.</p>`;
+  else h+=weightChart(hist)+`<div class="tbl"><table><thead><tr>${["Ημ/νία","Βάρος","Μέση","Λαιμός","Λίπος","Μπράτσο",""].map(x=>`<th>${x}</th>`).join("")}</tr></thead><tbody>
+    ${hist.slice().reverse().map((e,i)=>`<tr>${[e.date.split("-").reverse().join("/"),e.weight||"—",e.waist||"—",e.neck||"—",e.bf?r1(e.bf)+"%":"—",e.arm||"—"].map(x=>`<td>${x}</td>`).join("")}<td><button class="btn ghost sm" data-hd="${hist.length-1-i}" aria-label="Διαγραφή">×</button></td></tr>`).join("")}</tbody></table></div>`;
+  h+=`</section>`;
+  main.innerHTML=h;
+  main.querySelectorAll("[data-b]").forEach(el=>el.onchange=()=>{pr[el.dataset.b]=el.value;saveBody();render()});
+  main.querySelectorAll("[data-goal]").forEach(b=>b.onclick=()=>{S.body.goal=b.dataset.goal;saveBody();render()});
+  const ub=byId("useBody");if(ub)ub.onchange=()=>{S.body.targetMode=ub.checked?"body":"manual";saveBody();render();toast(ub.checked?"Ο στόχος του «Σήμερα» άλλαξε":"Επιστροφή στον χειροκίνητο στόχο")};
+  byId("mk2").onchange=e=>{S.body.manual.kcal=num(e.target.value);saveBody()};byId("mp2").onchange=e=>{S.body.manual.p=num(e.target.value);saveBody()};
+  byId("fat2").onchange=e=>{S.body.fatPct=Math.min(45,Math.max(15,num(e.target.value)||27));saveBody();render()};
+  byId("tex").onchange=e=>{S.body.train.extra=num(e.target.value);saveBody();render()};
+  main.querySelectorAll("[data-td]").forEach(c=>c.onchange=()=>{S.body.train.days[+c.dataset.td]=c.checked;saveBody();render()});
+  {const lo=byId("logout");if(lo)lo.onclick=()=>{flushAll();authSave(null);ST.db=false;setSync("Μόνο σε αυτή τη συσκευή");render();toast("Αποσυνδέθηκες")};
+   const li=byId("login");if(li)li.onclick=openLogin;byId("bkDown").onclick=backupDownload;byId("bkUp").onclick=backupRestore}
+  byId("logMeas").onclick=()=>{const c2=bodyCalc();if(!(+pr.weight)){toast("Βάλε πρώτα βάρος");return}
+    const e={date:todayISO(),weight:+pr.weight||null,waist:+pr.waist||null,neck:+pr.neck||null,chest:+pr.chest||null,arm:+pr.arm||null,thigh:+pr.thigh||null,bf:c2.bf?r1(c2.bf):null};
+    const ix=hist.findIndex(x=>x.date===e.date);if(ix>=0)hist[ix]=e;else hist.push(e);hist.sort((a,b)=>a.date<b.date?-1:1);saveBody();render();toast("Η μέτρηση καταγράφηκε")};
+  main.querySelectorAll("[data-hd]").forEach(b=>b.onclick=()=>{hist.splice(+b.dataset.hd,1);saveBody();render()});
+  (S.allLoaded?Promise.resolve():loadAllDays()).then(()=>{const el=byId("nutriHist");if(el&&S.tab==="body")el.innerHTML=nutriHistHTML()})}
+
+function nutriHistHTML(){
+  const today=todayISO(),since=S.body.since||today;
+  const logged=Object.keys(S.docs).filter(d=>S.docs[d]&&S.docs[d].edited).sort();
+  const start=[since,logged[0]||since].sort()[0];
+  const dates=[];for(let d=start;d<=today&&dates.length<400;d=addDays(d,1))dates.push(d);
+  const hit=d=>{const s=sumItems(dayItems(d)),t=target(d);return Math.abs(s.k-t.k)<=t.k*.1&&s.p>=t.p*.95};
+  const month=today.slice(0,7),mDates=dates.filter(d=>d.startsWith(month)),mHit=mDates.filter(hit).length;
+  // weeks
+  const weeks={};dates.forEach(d=>{const w=weekStart(d);(weeks[w]=weeks[w]||[]).push(d)});
+  const wk=Object.keys(weeks).sort().slice(-8).map(w=>{const ds=weeks[w];let k=0,p=0,tk=0,tp=0;ds.forEach(d=>{const s=sumItems(dayItems(d)),t=target(d);k+=s.k;p+=s.p;tk+=t.k;tp+=t.p});
+    return{w,k:k/ds.length,p:p/ds.length,tk:tk/ds.length,tp:tp/ds.length,n:ds.length}});
+  let h=`<div class="stats"><div class="stat"><span class="label">Μέρες στον στόχο</span><span class="x">${mHit} / ${mDates.length}</span><span class="small muted">αυτόν τον μήνα</span></div>
+    <div class="stat"><span class="label">Καταγεγραμμένες</span><span class="x">${logged.filter(d=>d.startsWith(month)).length}</span><span class="small muted">μέρες με αλλαγές</span></div></div>`;
+  if(wk.length>=1)h+=weeksChart(wk);
+  h+=`<p class="note">«Στον στόχο» = θερμίδες ±10% και πρωτεΐνη τουλάχιστον 95%. Οι μέρες που δεν άλλαξες μετράνε όπως το πρόγραμμα. Μετράει από ${fmtD(start)}, την πρώτη μέρα που χρησιμοποίησες την εφαρμογή.</p>`;
+  return h}
+function weeksChart(wk){
+  const W=640,H=190,L=44,R=12,T=18,B=34,n=wk.length,bw=Math.min(46,(W-L-R)/n*.6);
+  const mx=Math.max(...wk.map(x=>Math.max(x.k,x.tk)))*1.12,y=v=>T+(1-v/mx)*(H-T-B),x=i=>L+(i+.5)*(W-L-R)/n;
+  const ticks=[0,mx/2,mx].map(v=>Math.round(v/100)*100);
+  return `<div class="chart"><div class="row between"><span class="label">Μέσες θερμίδες / μέρα ανά εβδομάδα</span><span class="small muted">― στόχος</span></div>
+  <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Μέσες θερμίδες ανά εβδομάδα">
+  ${ticks.map(v=>`<line x1="${L}" x2="${W-R}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)"/><text x="${L-6}" y="${y(v)+4}" text-anchor="end" font-size="11" fill="var(--muted)">${v}</text>`).join("")}
+  ${wk.map((w,i)=>`<rect x="${x(i)-bw/2}" y="${y(w.k)}" width="${bw}" height="${H-B-y(w.k)}" rx="4" fill="${w.k>w.tk*1.1?"var(--warn)":"var(--ink)"}"/>
+   <line x1="${x(i)-bw/2-4}" x2="${x(i)+bw/2+4}" y1="${y(w.tk)}" y2="${y(w.tk)}" stroke="var(--prot)" stroke-width="2.5"/>
+   <text x="${x(i)}" y="${H-18}" text-anchor="middle" font-size="11" fill="var(--muted)">${fmtD(w.w)}</text>
+   <text x="${x(i)}" y="${H-4}" text-anchor="middle" font-size="11" fill="var(--prot)" font-weight="700">${r0(w.p)}γ</text>`).join("")}
+  </svg></div>`}
+function weightChart(hist){
+  const pts=hist.filter(e=>e.weight);if(pts.length<2)return `<p class="note">Το γράφημα βάρους εμφανίζεται από τη 2η μέτρηση.</p>`;
+  const W=640,H=190,L=44,R=16,T=14,B=28;
+  const t0=+parseISO(pts[0].date),t1=+parseISO(pts[pts.length-1].date);
+  let lo=Math.min(...pts.map(p=>p.weight)),hi=Math.max(...pts.map(p=>p.weight));if(hi-lo<2){lo-=1;hi+=1}lo=Math.floor(lo);hi=Math.ceil(hi);
+  const x=t=>L+(t1===t0?0:(t-t0)/(t1-t0))*(W-L-R),y=v=>T+(hi-v)/(hi-lo)*(H-T-B);
+  const ticks=[];const step=Math.max(1,Math.ceil((hi-lo)/4));for(let v=lo;v<=hi;v+=step)ticks.push(v);
+  const d=pts.map((p,i)=>(i?"L":"M")+x(+parseISO(p.date)).toFixed(1)+","+y(p.weight).toFixed(1)).join(" ");
+  const last=pts[pts.length-1],first=pts[0],diff=r1(last.weight-first.weight);
+  return `<div class="chart"><div class="row between"><span class="label">Βάρος (κιλά)</span><span class="small">${diff>0?"+":""}${diff} κ. από ${fmtD(first.date)}</span></div>
+  <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Γράφημα βάρους">
+   ${ticks.map(v=>`<line x1="${L}" x2="${W-R}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)"/><text x="${L-8}" y="${y(v)+4}" text-anchor="end" font-size="11" fill="var(--muted)">${v}</text>`).join("")}
+   <path d="${d}" fill="none" stroke="var(--ink)" stroke-width="2.5" stroke-linejoin="round"/>
+   ${pts.map(p=>`<circle cx="${x(+parseISO(p.date))}" cy="${y(p.weight)}" r="3" fill="var(--ink)"/>`).join("")}
+   <circle cx="${x(+parseISO(last.date))}" cy="${y(last.weight)}" r="5.5" fill="var(--surface)" stroke="var(--ink)" stroke-width="2.5"/>
+   <text x="${L}" y="${H-8}" font-size="11" fill="var(--muted)">${fmtD(first.date)}</text>
+   <text x="${W-R}" y="${H-8}" text-anchor="end" font-size="11" fill="var(--muted)">${fmtD(last.date)}</text>
+  </svg></div>`}
+
+/* ---------- misc ---------- */
+let tt;function toast(m){clearTimeout(tt);let el=byId("toast");if(!el){el=document.createElement("div");el.id="toast";el.className="toast";el.setAttribute("role","status");document.body.appendChild(el)}el.textContent=m;el.hidden=false;tt=setTimeout(()=>el.hidden=true,1800)}
+document.querySelectorAll("nav.tabs button").forEach(b=>b.onclick=()=>{S.tab=b.dataset.tab;lsSet("tab",S.tab);closeSheet();window.scrollTo(0,0);render()});
+boot();
+if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{});
+</script>
+</body>
+</html>
