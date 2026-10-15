@@ -235,7 +235,7 @@ nav.tabs button.on{color:var(--ink)}
 <script>
 /* ---------- Αρχικά δεδομένα (από το αρχείο Numbers) ---------- */
 // Έκδοση: ίδιο νούμερο με το C στο sw.js· ημερομηνία/ώρα αλλαγής (ώρα Ελλάδας). Ενημερώνεται σε κάθε αλλαγή.
-const APP_VER={v:"v6",at:"15/10/2026 10:40"};
+const APP_VER={v:"v7",at:"15/10/2026 10:45"};
 const SLOTS=[{n:"Πρωινό",t:"8:30"},{n:"Σνακ",t:"πρωί"},{n:"Γεύμα 1",t:"11:00"},{n:"Γεύμα 2",t:"16:00"},{n:"Σνακ",t:"απόγευμα"},{n:"Βραδινό",t:"21:00"}];
 const DAYS=["Δευτέρα","Τρίτη","Τετάρτη","Πέμπτη","Παρασκευή","Σάββατο","Κυριακή"];
 const DSH=["Δευ","Τρι","Τετ","Πεμ","Παρ","Σαβ","Κυρ"];
@@ -1111,15 +1111,15 @@ function renderGymEdit(){
     const best=exHistory(exKey(e.n)).filter(o=>o.d<d).reduce((a,o)=>Math.max(a,o.st.cmp),0),pr=st&&best>0&&st.cmp>best+.01;
     h+=`<section class="card gex"><div class="gx-h"><input class="gx-n" data-xn="${i}" value="${esc(e.n)}" aria-label="Όνομα άσκησης">
       ${pr?`<span class="chip on">ρεκόρ</span>`:""}<select data-xm="${i}" aria-label="Τύπος">${[["w","Kg"],["bw","χωρίς βάρος"],["t","χρόνος"]].map(([v,l])=>`<option value="${v}" ${m===v?"selected":""}>${l}</option>`).join("")}</select>
-      <button class="btn ghost sm" data-xdel="${i}" aria-label="Διαγραφή άσκησης">×</button></div>
+      <button class="btn ghost sm" data-xdel="${i}" aria-label="Διαγραφή άσκησης" title="Διαγραφή άσκησης"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg></button></div>
       ${pv?`<div class="gprev">Προηγ. ${fmtD(pv.d)}: ${esc(setsTxt(pv.e))}</div>`:""}`;
     e.sets.forEach((s,j)=>{const p=ps[j]||{},k=i+"."+j;
       h+=`<div class="gset"><span class="sn">${j+1}</span>`;
       if(m==="w")h+=`<input data-sw="${k}" inputmode="decimal" value="${s.w!=null?kg(s.w):""}" placeholder="${p.w!=null?kg(p.w):"Kg"}"><span class="x">Kg ×</span>`;
       if(m==="t")h+=`<input data-ss="${k}" inputmode="numeric" value="${s.s??""}" placeholder="${p.s??"δευτ."}"><span class="x">δευτ.</span>`;
-      else h+=`<input data-sr="${k}" inputmode="numeric" value="${s.r??""}" placeholder="${p.r??"επαν."}">${m==="bw"?`<button class="btn ghost sm" data-smax="${k}">max</button>`:""}`;
-      h+=`<button class="btn ghost sm" data-sdel="${k}" aria-label="Διαγραφή σετ">×</button></div>`});
-    h+=`<button class="btn sm" data-sadd="${i}" style="align-self:flex-start">+ Σετ</button></section>`});
+      else h+=`<input data-sr="${k}" inputmode="numeric" value="${s.r??""}" placeholder="${p.r??""}"><span class="x">επαν.</span>${m==="bw"?`<button class="btn ghost sm" data-smax="${k}">max</button>`:""}`;
+      h+=`</div>`});
+    h+=`<div class="row"><button class="btn sm" data-sadd="${i}">+ Σετ</button>${e.sets.length?`<button class="btn sm" data-sdel="${i}">− Σετ</button>`:""}</div></section>`});
   h+=`<section class="card"><div class="row"><input id="gxNew" list="gxList" placeholder="Νέα άσκηση" class="grow" autocomplete="off"><button class="btn sm primary" id="gxAdd">+ Άσκηση</button></div>
     <datalist id="gxList">${known.map(x=>`<option value="${esc(x.n)}">`).join("")}</datalist></section>
     <button class="btn danger sm" id="gDel" style="align-self:flex-start">Διαγραφή προπόνησης</button>`;
@@ -1137,7 +1137,7 @@ function renderGymEdit(){
   main.querySelectorAll("[data-sr]").forEach(el=>el.oninput=()=>{const [i,j]=ij(el.dataset.sr),v=el.value.trim().toLowerCase(),n=pnum(v);g.ex[i].sets[j].r=v==="max"?"max":n==null?null:Math.round(n);sv()});
   main.querySelectorAll("[data-ss]").forEach(el=>el.oninput=()=>{const [i,j]=ij(el.dataset.ss),n=pnum(el.value);g.ex[i].sets[j].s=n==null?null:Math.round(n);sv()});
   main.querySelectorAll("[data-smax]").forEach(b=>b.onclick=()=>{const [i,j]=ij(b.dataset.smax);g.ex[i].sets[j].r="max";sv();render()});
-  main.querySelectorAll("[data-sdel]").forEach(b=>b.onclick=()=>{const [i,j]=ij(b.dataset.sdel);g.ex[i].sets.splice(j,1);sv();render()});
+  main.querySelectorAll("[data-sdel]").forEach(b=>b.onclick=()=>{g.ex[+b.dataset.sdel].sets.pop();sv();render()});
   main.querySelectorAll("[data-sadd]").forEach(b=>b.onclick=()=>{const e=g.ex[+b.dataset.sadd],l=e.sets[e.sets.length-1];e.sets.push({w:l?l.w:null,r:null,s:null});sv();render()});
   byId("gxAdd").onclick=()=>{const n=byId("gxNew").value.trim();if(!n)return;const pv=prevEx(exKey(n),d);
     g.ex.push(pv?{n:pv.e.n,m:pv.e.m||"w",sets:pv.e.sets.map(s=>({w:s.w,r:null,s:null}))}:{n,m:"w",sets:[{w:null,r:null,s:null},{w:null,r:null,s:null},{w:null,r:null,s:null}]});sv();render()};
