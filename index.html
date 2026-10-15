@@ -850,8 +850,8 @@ function renderBody(){
   const hist=S.body.history;
   h+=`<section class="card"><h3>Πορεία σώματος</h3>`;
   if(!hist.length)h+=`<p class="note">Δεν έχεις καταγράψει μέτρηση ακόμα. Κάνε μία την εβδομάδα, ίδια μέρα και ώρα.</p>`;
-  else h+=weightChart(hist)+`<div class="tbl"><table><thead><tr>${["Ημ/νία","Βάρος","Μέση","Λαιμός","Λίπος","Μπράτσο",""].map(x=>`<th>${x}</th>`).join("")}</tr></thead><tbody>
-    ${hist.slice().reverse().map((e,i)=>`<tr>${[e.date.split("-").reverse().join("/"),e.weight||"—",e.waist||"—",e.neck||"—",e.bf?r1(e.bf)+"%":"—",e.arm||"—"].map(x=>`<td>${x}</td>`).join("")}<td><button class="btn ghost sm" data-hd="${hist.length-1-i}" aria-label="Διαγραφή">×</button></td></tr>`).join("")}</tbody></table></div>`;
+  else h+=weightChart(hist)+`<div class="tbl"><table><thead><tr>${["Ημ/νία","Βάρος","Μέση","Λαιμός","Λίπος","Στήθος","Μπράτσο","Μηρός",""].map(x=>`<th>${x}</th>`).join("")}</tr></thead><tbody>
+    ${hist.slice().reverse().map((e,i)=>`<tr>${[e.date.split("-").reverse().join("/"),e.weight||"—",e.waist||"—",e.neck||"—",e.bf?r1(e.bf)+"%":"—",e.chest||"—",e.arm||"—",e.thigh||"—"].map(x=>`<td>${x}</td>`).join("")}<td><button class="btn ghost sm" data-hd="${hist.length-1-i}" aria-label="Διαγραφή">×</button></td></tr>`).join("")}</tbody></table></div>`;
   h+=`</section>`;
   main.innerHTML=h;
   main.querySelectorAll("[data-b]").forEach(el=>el.onchange=()=>{pr[el.dataset.b]=el.value;saveBody();render()});
