@@ -239,7 +239,7 @@ nav.tabs button.on{color:var(--ink)}
 /* ---------- Αρχικά δεδομένα (από το αρχείο Numbers) ---------- */
 // Έκδοση: ίδιο νούμερο με το C στο sw.js. Η ώρα δεν γράφεται με το χέρι: είναι η ώρα που ανέβηκε το index.html
 // στο GitHub Pages (κεφαλίδα Last-Modified της απάντησης που φυλάει το service worker), σε ώρα της συσκευής.
-const APP_VER={v:"v17",at:""};
+const APP_VER={v:"v18",at:""};
 function fmtDT(d){const p2=n=>String(n).padStart(2,"0");return `${p2(d.getDate())}/${p2(d.getMonth()+1)}/${d.getFullYear()} ${p2(d.getHours())}:${p2(d.getMinutes())}`}
 async function loadVerTime(){let lm=null;
   try{const r=await caches.match(location.href,{ignoreSearch:true})||await caches.match("./index.html");lm=r&&r.headers.get("last-modified")}catch(e){}
@@ -586,7 +586,6 @@ function renderToday(){
       <span class="res">+${MX(r0(o.k),r1(o.p))} → <b>${r0(s.k+o.k)}</b> / <b class="pr">${r1(s.p+o.p)}</b></span></div>`});
     S._sugg=sg}
   h+=`</section>`+weekHTML();
-  if(S.dayEdited)h+=`<button class="btn danger sm" id="resetDay" style="align-self:flex-start">Επαναφορά της μέρας στο πρόγραμμα</button>`;
   main.innerHTML=h;
   const go=iso=>{S.date=iso;loadDay()};
   byId("prevDay").onclick=()=>go(addDays(S.date,-1));byId("nextDay").onclick=()=>go(addDays(S.date,1));
@@ -600,7 +599,7 @@ function renderToday(){
     if(o.meal){S.day.items.push({id:uid(),slot,type:"meal",ref:o.meal.id,qty:o.s});if(o.extra)S.day.items.push({id:uid(),slot,type:"food",ref:o.extra.f.id,qty:o.extra.q})}
     else o.parts.forEach(x=>S.day.items.push({id:uid(),slot,type:"food",ref:x.f.id,qty:x.q}));
     saveDay();toast("Προστέθηκε στο "+SLOTS[slot].n);render()});
-  const rd=byId("resetDay");if(rd)rd.onclick=()=>{S.day.items=planItems(S.date);S.dayEdited=false;saveDay(false);render()}}
+}
 
 /* ---------- Ρυθμίσεις ---------- */
 function openSettings(){
