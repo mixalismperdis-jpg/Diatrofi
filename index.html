@@ -235,7 +235,7 @@ nav.tabs button.on{color:var(--ink)}
 <script>
 /* ---------- Αρχικά δεδομένα (από το αρχείο Numbers) ---------- */
 // Έκδοση: ίδιο νούμερο με το C στο sw.js· ημερομηνία/ώρα αλλαγής (ώρα Ελλάδας). Ενημερώνεται σε κάθε αλλαγή.
-const APP_VER={v:"v7",at:"15/10/2026 10:45"};
+const APP_VER={v:"v8",at:"15/10/2026 12:50"};
 const SLOTS=[{n:"Πρωινό",t:"8:30"},{n:"Σνακ",t:"πρωί"},{n:"Γεύμα 1",t:"11:00"},{n:"Γεύμα 2",t:"16:00"},{n:"Σνακ",t:"απόγευμα"},{n:"Βραδινό",t:"21:00"}];
 const DAYS=["Δευτέρα","Τρίτη","Τετάρτη","Πέμπτη","Παρασκευή","Σάββατο","Κυριακή"];
 const DSH=["Δευ","Τρι","Τετ","Πεμ","Παρ","Σαβ","Κυρ"];
@@ -251,7 +251,7 @@ const DEFAULT_BODY={profile:{sex:"m",age:"",height:"",weight:"",activity:"1.55",
 
 /* ---------- Κατάσταση & βοηθητικά ---------- */
 const S={tab:"today",sub:"plan",lib:{ver:2,foods:DEFAULT_FOODS,meals:DEFAULT_MEALS},plan:null,body:DEFAULT_BODY,
-  date:null,day:null,dayEdited:false,docs:{},gym:{},gymSub:"list",gymOpen:null,allLoaded:false,foodQ:"",suggSlot:null,shopRange:"rest"};
+  date:null,day:null,dayEdited:false,docs:{},gym:{},gymSub:"list",gymOpen:null,allLoaded:false,foodQ:"",foodSub:"ing",pickSub:"rec",suggSlot:null,shopRange:"rest"};
 const pad=n=>String(n).padStart(2,"0");
 const isoOf=d=>d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate());
 const todayISO=()=>isoOf(new Date());
@@ -270,14 +270,15 @@ const Z=()=>({k:0,p:0,c:0,f:0});
 const add=(a,b,m=1)=>{a.k+=b.k*m;a.p+=b.p*m;a.c+=b.c*m;a.f+=b.f*m;return a};
 
 function foodNutr(f,q){const m=f.u==="g"?q/100:q;return{k:f.kcal*m,p:f.p*m,c:(f.c||0)*m,f:(f.f||0)*m}}
+const servOf=m=>Math.max(1,+m.n||1);
 function mealNutr(m){
-  if(m.parts&&m.parts.length){const t=Z();for(const pt of m.parts){const f=food(pt.food);if(f)add(t,foodNutr(f,pt.qty))}return t}
+  if(m.parts&&m.parts.length){const t=Z();for(const pt of m.parts){const f=food(pt.food);if(f)add(t,foodNutr(f,pt.qty),1/servOf(m))}return t}
   return{k:+m.kcal||0,p:+m.p||0,c:+m.c||0,f:+m.f||0}}
 function itemNutr(it){
   if(it.type==="meal"){const m=meal(it.ref);if(!m)return Z();const n=mealNutr(m);return add(Z(),n,it.qty)}
   if(it.type==="custom")return add(Z(),{k:+it.kcal||0,p:+it.p||0,c:+it.c||0,f:+it.f||0},it.qty||1);
   const f=food(it.ref);return f?foodNutr(f,it.qty):Z()}
-function itemName(it){if(it.type==="meal"){const m=meal(it.ref);return m?m.name:"(διαγραμμένο γεύμα)"}if(it.type==="custom")return it.name;const f=food(it.ref);return f?f.name:"(διαγραμμένο τρόφιμο)"}
+function itemName(it){if(it.type==="meal"){const m=meal(it.ref);return m?m.name:"(διαγραμμένη συνταγή)"}if(it.type==="custom")return it.name;const f=food(it.ref);return f?f.name:"(διαγραμμένο τρόφιμο)"}
 function qtyLabel(it){if(it.type==="meal")return it.qty===1?"":"×"+it.qty;if(it.type==="custom")return (it.grams?it.grams+" γρ. · ":"")+"από φωτογραφία";const f=food(it.ref);if(!f)return"";return f.u==="g"?it.qty+" γρ.":it.qty+" "+(f.pn||"τεμ.")}
 function sumItems(items){const t=Z();for(const it of items)add(t,itemNutr(it));return t}
 function normPlan(p){if(!p||!Array.isArray(p.days))p=DEFAULT_PLAN;
@@ -487,7 +488,7 @@ function suggest(Rk,Rp,slot){
 const main=byId("main");
 function render(){
   document.querySelectorAll("nav.tabs button").forEach(b=>b.classList.toggle("on",b.dataset.tab===S.tab));
-  byId("hTitle").textContent={today:"Σήμερα",plan:S.sub==="shop"?"Λίστα για ψώνια":"Εβδομαδιαίο πρόγραμμα",foods:"Τρόφιμα & γεύματα",body:"Το σώμα μου",gym:"Προπόνηση"}[S.tab];
+  byId("hTitle").textContent={today:"Σήμερα",plan:S.sub==="shop"?"Λίστα για ψώνια":"Εβδομαδιαίο πρόγραμμα",foods:"Τρόφιμα & συνταγές",body:"Το σώμα μου",gym:"Προπόνηση"}[S.tab];
   renderGauges();
   ({today:renderToday,plan:renderPlan,foods:renderFoods,body:renderBody,gym:renderGym})[S.tab]()}
 
@@ -588,19 +589,21 @@ function previewLine(d){const t=TG.tgt(),s=sumItems(TG.get());
 const nv=n=>`${r0(n.k)} kcal · <b>${r1(n.p)} π.</b> · ${r0(n.c)} υ. · ${r0(n.f)} λ.`;
 
 function pickerHTML(slot,q){
-  const ql=q.trim().toLowerCase();
+  const ql=q.trim().toLowerCase(),rec=S.pickSub==="rec";
   const meals=S.lib.meals.filter(m=>!ql||m.name.toLowerCase().includes(ql)).sort((a,b)=>(b.s?.includes(slot)?1:0)-(a.s?.includes(slot)?1:0));
   const foods=S.lib.foods.filter(f=>!ql||f.name.toLowerCase().includes(ql));
-  const mv=m=>{const n=mealNutr(m);return `${r0(n.k)} kcal · <b>${r1(n.p)} γρ.</b>`};
+  const mv=m=>{const n=mealNutr(m);return `${r0(n.k)} kcal · <b>${r1(n.p)} γρ.</b>${servOf(m)>1?' <span class="muted">/μερίδα</span>':""}`};
   const fv=f=>`${f.kcal} kcal · <b>${f.p} γρ.</b> <span class="muted">/${f.u==="g"?"100γρ":esc(f.pn||"τεμ.")}</span>`;
-  return `<span class="label">Γεύματα</span><div class="opts">${meals.map(m=>`<button class="opt" data-pm="${m.id}"><span>${esc(m.name)}</span><span class="v">${mv(m)}</span></button>`).join("")||'<span class="note">Κανένα.</span>'}</div>
-  <span class="label">Τρόφιμα</span><div class="opts">${foods.map(f=>`<button class="opt" data-pf="${f.id}"><span>${esc(f.name)}${f.est?' <span class="est">εκτίμηση</span>':""}</span><span class="v">${fv(f)}</span></button>`).join("")||'<span class="note">Κανένα.</span>'}</div>`}
+  const seg=`<div class="seg"><button id="ps-rec" class="${rec?"on":""}">Συνταγές (${meals.length})</button><button id="ps-ing" class="${rec?"":"on"}">Υλικά (${foods.length})</button></div>`;
+  return seg+(rec?`<div class="opts">${meals.map(m=>`<button class="opt" data-pm="${m.id}"><span>${esc(m.name)}</span><span class="v">${mv(m)}</span></button>`).join("")||'<span class="note">Καμία συνταγή. Φτιάξε από την καρτέλα Τρόφιμα › Συνταγές.</span>'}</div>`
+  :`<div class="opts">${foods.map(f=>`<button class="opt" data-pf="${f.id}"><span>${esc(f.name)}${f.est?' <span class="est">εκτίμηση</span>':""}</span><span class="v">${fv(f)}</span></button>`).join("")||'<span class="note">Κανένα υλικό.</span>'}</div>`)}
 
 function openAddSheet(slot,replaceId){
   const old=replaceId?TG.get().find(x=>x.id===replaceId):null, on=old?itemNutr(old):Z();
   let q="";
   const draw=()=>{byId("pick").innerHTML=pickerHTML(slot,q);bindPick()};
   const bindPick=()=>{
+    byId("ps-rec").onclick=()=>{S.pickSub="rec";draw()};byId("ps-ing").onclick=()=>{S.pickSub="ing";draw()};
     byId("pick").querySelectorAll("[data-pm]").forEach(b=>b.onclick=()=>commit({type:"meal",ref:b.dataset.pm,qty:1}));
     byId("pick").querySelectorAll("[data-pf]").forEach(b=>b.onclick=()=>askQty(food(b.dataset.pf)))};
   const commit=it=>{if(old){for(const k of Object.keys(old))if(!["id","slot"].includes(k))delete old[k];Object.assign(old,it)}else TG.get().push({id:uid(),slot,...it});TG.save();closeSheet();render()};
@@ -698,7 +701,7 @@ function placeItems(its,slot,replaceId){
 function renderPlan(){
   let h=`<div class="seg"><button id="sub-plan" class="${S.sub==="plan"?"on":""}">Πρόγραμμα</button><button id="sub-shop" class="${S.sub==="shop"?"on":""}">Λίστα για ψώνια</button></div>`;
   if(S.sub==="shop"){main.innerHTML=h+shopHTML();bindPlanSeg();bindShop();return}
-  h+=`<p class="note">Κάθε μέρα ξεκινά από εδώ. Πάτα «+» για να βάλεις γεύμα ή τρόφιμο, ή πάτα κάτι για να αλλάξεις ποσότητα. Τις αλλαγές μιας συγκεκριμένης μέρας τις κάνεις στο «Σήμερα».</p>`;
+  h+=`<p class="note">Κάθε μέρα ξεκινά από εδώ. Πάτα «+» για να βάλεις συνταγή ή υλικό, ή πάτα κάτι για να αλλάξεις ποσότητα. Τις αλλαγές μιας συγκεκριμένης μέρας τις κάνεις στο «Σήμερα».</p>`;
   DAYS.forEach((dn,d)=>{const row=S.plan.days[d].filter(validItem),s=sumItems(row),t=targetFor(!!S.body.train.days[d]),dk=s.k-t.k,dp=s.p-t.p;
     h+=`<section class="card day"><div class="row between" style="padding-top:8px"><h3>${dn}${S.body.train.days[d]?' <span class="chip on" style="padding:2px 8px">Προπόνηση</span>':""}</h3>
       <span class="tot">${r0(s.k)} (${dk>=0?"+":""}${r0(dk)}) · <b>${r1(s.p)}</b> (${dp>=0?"+":""}${r0(dp)})</span></div>`;
@@ -724,7 +727,7 @@ function shopAgg(){
   for(const d of shopDates())for(const it of dayItems(d)){
     if(it.type==="food")addF(it.ref,it.qty);
     else if(it.type==="meal"){const m=meal(it.ref);if(!m)continue;const parts=m.parts&&m.parts.length?m.parts:m.ing;
-      if(parts&&parts.length)parts.forEach(p=>addF(p.food,p.qty*it.qty));else noIng.add(m.name)}}
+      if(parts&&parts.length)parts.forEach(p=>addF(p.food,p.qty*it.qty/servOf(m)));else noIng.add(m.name)}}
   return{agg,noIng:[...noIng]}}
 function fmtQty(f,q){if(f.u==="g"){if(q>=1000){const kg=Math.round(q/10)/100;return kg.toLocaleString("el-GR")+(kg===1?" κιλό":" κιλά")}return Math.ceil(q/10)*10+" γρ."}
   const n=Math.ceil(q-1e-9);const pn=(f.pn||"τεμ.").split(" ")[0];return n+" "+(pn==="φέτα"?(n===1?"φέτα":"φέτες"):pn==="κονσέρβα"?(n===1?"κονσέρβα":"κονσέρβες"):pn)}
@@ -739,7 +742,7 @@ function shopHTML(){
     <div class="row"><button class="btn sm" id="copyShop">Αντιγραφή λίστας</button><button class="btn sm ghost" id="clearShop">Ξετσέκαρε όλα</button></div></section>`;
   for(const c of CATS){const g=groups[c];if(!g)continue;g.sort((a,b)=>a.f.name.localeCompare(b.f.name,"el"));
     h+=`<section class="card" style="gap:0"><span class="label" style="padding-bottom:4px">${c}</span>${g.map(({f,q})=>`<label class="shop ${done[f.id]?"done":""}"><input type="checkbox" data-sh="${f.id}" ${done[f.id]?"checked":""}><span class="n">${esc(f.name)}</span><span class="q">${fmtQty(f,q)}</span></label>`).join("")}</section>`}
-  if(noIng.length)h+=`<p class="note">Χωρίς υλικά (πρόσθεσέ τα στο γεύμα για να μπουν στη λίστα): ${noIng.map(esc).join(", ")}.</p>`;
+  if(noIng.length)h+=`<p class="note">Χωρίς υλικά (πρόσθεσέ τα στη συνταγή για να μπουν στη λίστα): ${noIng.map(esc).join(", ")}.</p>`;
   return h}
 function bindShop(){
   byId("shopRange").onchange=e=>{S.shopRange=e.target.value;render()};
@@ -751,27 +754,30 @@ function bindShop(){
 
 /* ---------- Τρόφιμα ---------- */
 function renderFoods(){
-  const ql=S.foodQ.trim().toLowerCase();
+  const ql=S.foodQ.trim().toLowerCase(),rec=S.foodSub==="rec";
   const foods=S.lib.foods.filter(f=>!ql||f.name.toLowerCase().includes(ql));
   const meals=S.lib.meals.filter(m=>!ql||m.name.toLowerCase().includes(ql));
-  let h=`<input id="fq" placeholder="Αναζήτηση" value="${esc(S.foodQ)}" autocomplete="off">
-  <section class="card" style="gap:4px"><div class="row between"><h3>Τρόφιμα</h3><div class="row"><button class="btn sm" id="labelScan">Barcode</button><button class="btn sm primary" id="newFood">+ Νέο</button></div></div>
+  let h=`<div class="seg"><button id="fs-ing" class="${rec?"":"on"}">Υλικά (${S.lib.foods.length})</button><button id="fs-rec" class="${rec?"on":""}">Συνταγές (${S.lib.meals.length})</button></div>
+  <input id="fq" placeholder="${rec?"Αναζήτηση συνταγής":"Αναζήτηση υλικού"}" value="${esc(S.foodQ)}" autocomplete="off">`;
+  if(!rec)h+=`<section class="card" style="gap:4px"><div class="row between"><h3>Υλικά</h3><div class="row"><button class="btn sm" id="labelScan">Barcode</button><button class="btn sm primary" id="newFood">+ Νέο</button></div></div>
   <div class="list">${foods.map(f=>`<div class="li"><span class="n">${esc(f.name)}${f.est?' <span class="est">εκτίμηση</span>':""}</span>
-   <span class="v">${f.kcal} · <b>${f.p}</b> · ${f.c??0} · ${f.f??0}<br><span class="muted">ανά ${f.u==="g"?"100 γρ.":esc(f.pn||"τεμ.")}</span></span><button class="btn sm" data-ef="${f.id}">Επεξ.</button></div>`).join("")}</div>
-   <p class="note">Σειρά τιμών: θερμίδες · <span class="pr">πρωτεΐνη</span> · υδατάνθρακες · λιπαρά. «Εκτίμηση» σημαίνει συνηθισμένες τιμές που έβαλα εγώ: διόρθωσέ τες από τη συσκευασία.</p></section>
-  <section class="card" style="gap:4px"><div class="row between"><h3>Γεύματα</h3><button class="btn sm primary" id="newMeal">+ Νέο</button></div>
-  <div class="list">${meals.map(m=>{const n=mealNutr(m);return `<div class="li"><span class="n">${esc(m.name)}</span>
-   <span class="v">${r0(n.k)} · <b>${r1(n.p)}</b> · ${r0(n.c)} · ${r0(n.f)}</span><button class="btn sm" data-em="${m.id}">Επεξ.</button></div>`}).join("")}</div></section>`;
+   <span class="v">${f.kcal} · <b>${f.p}</b> · ${f.c??0} · ${f.f??0}<br><span class="muted">ανά ${f.u==="g"?"100 γρ.":esc(f.pn||"τεμ.")}</span></span><button class="btn sm" data-ef="${f.id}">Επεξ.</button></div>`).join("")||'<span class="note">Κανένα.</span>'}</div>
+   <p class="note">Σειρά τιμών: θερμίδες · <span class="pr">πρωτεΐνη</span> · υδατάνθρακες · λιπαρά. «Εκτίμηση» σημαίνει συνηθισμένες τιμές που έβαλα εγώ: διόρθωσέ τες από τη συσκευασία.</p></section>`;
+  else h+=`<section class="card" style="gap:4px"><div class="row between"><h3>Συνταγές</h3><button class="btn sm primary" id="newMeal">+ Νέα συνταγή</button></div>
+  <div class="list">${meals.map(m=>{const n=mealNutr(m),sv=servOf(m);return `<div class="li"><span class="n">${esc(m.name)}</span>
+   <span class="v">${r0(n.k)} · <b>${r1(n.p)}</b> · ${r0(n.c)} · ${r0(n.f)}<br><span class="muted">${sv>1?"ανά μερίδα ("+sv+")":"ανά μερίδα"}</span></span><button class="btn sm" data-em="${m.id}">Επεξ.</button></div>`}).join("")||'<span class="note">Καμία.</span>'}</div>
+   <p class="note">Φτιάξε συνταγή από τα υλικά σου· οι τιμές βγαίνουν μόνες τους. Στο πρόγραμμα διαλέγεις συνταγή ή μεμονωμένο υλικό.</p></section>`;
   main.innerHTML=h;
+  byId("fs-ing").onclick=()=>{S.foodSub="ing";S.foodQ="";renderFoods()};byId("fs-rec").onclick=()=>{S.foodSub="rec";S.foodQ="";renderFoods()};
   byId("fq").oninput=e=>{S.foodQ=e.target.value;const pos=e.target.selectionStart;renderFoods();const n=byId("fq");n.focus();n.setSelectionRange(pos,pos)};
-  byId("newFood").onclick=()=>editFood(null);byId("newMeal").onclick=()=>editMeal(null);
-  byId("labelScan").onclick=()=>{TG=dayTG();startScan(5,null)};
+  if(rec)byId("newMeal").onclick=()=>editMeal(null);
+  else{byId("newFood").onclick=()=>editFood(null);byId("labelScan").onclick=()=>{TG=dayTG();startScan(5,null)}}
   main.querySelectorAll("[data-ef]").forEach(b=>b.onclick=()=>editFood(b.dataset.ef));
   main.querySelectorAll("[data-em]").forEach(b=>b.onclick=()=>editMeal(b.dataset.em))}
 
 function editFood(id){
   const f=id?food(id):{id:uid(),name:"",u:"g",kcal:"",p:"",c:"",f:"",pn:"",est:false,cat:"Άλλα"};
-  sheet(`<div class="row between"><h2>${id?"Επεξεργασία":"Νέο"} τρόφιμο</h2><button class="btn ghost" id="x">Κλείσιμο</button></div>
+  sheet(`<div class="row between"><h2>${id?"Επεξεργασία":"Νέο"} υλικό</h2><button class="btn ghost" id="x">Κλείσιμο</button></div>
    <label class="field"><span>Όνομα</span><input id="fn" value="${esc(f.name)}"></label>
    <div class="form"><label class="field"><span>Οι τιμές είναι</span><select id="fu"><option value="g" ${f.u==="g"?"selected":""}>ανά 100 γρ.</option><option value="pc" ${f.u==="pc"?"selected":""}>ανά τεμάχιο / φέτα / κουταλιά</option></select></label>
    <label class="field"><span>Κατηγορία (για τα ψώνια)</span><select id="fcat">${CATS.map(c=>`<option ${f.cat===c?"selected":""}>${c}</option>`).join("")}</select></label></div>
@@ -785,39 +791,41 @@ function editFood(id){
      const used=foodUsage(id);
      byId("delc").innerHTML=`<div class="card" style="gap:8px"><span class="small">${used.length?"Χρησιμοποιείται σε: "+used.map(esc).join(", ")+".":"Δεν χρησιμοποιείται κάπου."}</span>
        <label class="field"><span>Αντικατάσταση παντού με (προαιρετικό)</span><select id="repl"><option value="">— Καμία, απλώς αφαίρεση —</option>${S.lib.foods.filter(x=>x.id!==id).map(x=>`<option value="${x.id}">${esc(x.name)}</option>`).join("")}</select></label>
-       <p class="note">Φεύγει από το πρόγραμμα, από σήμερα και τις επόμενες μέρες. Γεύματα που έχουν μόνο αυτό το τρόφιμο σβήνονται κι αυτά. Οι περασμένες μέρες κρατάνε τα νούμερά τους.</p>
+       <p class="note">Φεύγει από το πρόγραμμα, από σήμερα και τις επόμενες μέρες. Συνταγές που έχουν μόνο αυτό το υλικό σβήνονται κι αυτές. Οι περασμένες μέρες κρατάνε τα νούμερά τους.</p>
        <button class="btn danger" id="dy">Διαγραφή</button></div>`;
      byId("dy").onclick=async()=>{byId("dy").disabled=true;await deleteFood(id,byId("repl").value||null);closeSheet();render();toast("Διαγράφηκε")}}})}
 
 function editMeal(id){
-  const m=id?JSON.parse(JSON.stringify(meal(id))):{id:uid(),name:"",kcal:0,p:0,c:0,f:0,s:[],parts:[],ing:null};
+  const m=id?JSON.parse(JSON.stringify(meal(id))):{id:uid(),name:"",kcal:0,p:0,c:0,f:0,s:[],n:1,parts:[],ing:null};
   let mode=m.parts&&m.parts.length?"parts":id?"fixed":"parts";if(!m.parts)m.parts=[];if(!m.ing)m.ing=[];
   const list=()=>mode==="parts"?m.parts:m.ing;
   const draw=()=>{
-    const n=mode==="parts"?mealNutr({parts:m.parts}):{k:+m.kcal||0,p:+m.p||0,c:+m.c||0,f:+m.f||0};
+    const n=mode==="parts"?mealNutr({parts:m.parts,n:m.n}):{k:+m.kcal||0,p:+m.p||0,c:+m.c||0,f:+m.f||0};
     const rows=list();
-    sheet(`<div class="row between"><h2>${id?"Επεξεργασία":"Νέο"} γεύμα</h2><button class="btn ghost" id="x">Κλείσιμο</button></div>
+    sheet(`<div class="row between"><h2>${id?"Επεξεργασία":"Νέα"} συνταγή</h2><button class="btn ghost" id="x">Κλείσιμο</button></div>
      <label class="field"><span>Όνομα / περιγραφή</span><input id="mn" value="${esc(m.name)}"></label>
-     <div class="seg"><button id="mfix" class="${mode==="fixed"?"on":""}">Με σύνολα</button><button id="mpar" class="${mode==="parts"?"on":""}">Υπολογισμός από υλικά</button></div>
-     ${mode==="fixed"?`<div class="form">${[["mk","Θερμίδες",m.kcal],["mp","Πρωτεΐνη",m.p],["mc","Υδατάνθρακες",m.c],["mf","Λιπαρά",m.f]].map(([i,l,v])=>`<label class="field"><span>${l}</span><input id="${i}" type="number" inputmode="decimal" value="${v??0}"></label>`).join("")}</div>`:""}
-     <span class="label">${mode==="parts"?"Υλικά":"Υλικά για τη λίστα ψωνιών"}</span>
+     <label class="field"><span>Βγάζει μερίδες</span><input id="mserv" type="number" inputmode="numeric" min="1" step="1" value="${servOf(m)}"></label>
+     <div class="seg"><button id="mpar" class="${mode==="parts"?"on":""}">Από υλικά</button><button id="mfix" class="${mode==="fixed"?"on":""}">Σταθερές τιμές</button></div>
+     ${mode==="fixed"?`<span class="label">Τιμές ανά μερίδα</span><div class="form">${[["mk","Θερμίδες",m.kcal],["mp","Πρωτεΐνη",m.p],["mc","Υδατάνθρακες",m.c],["mf","Λιπαρά",m.f]].map(([i,l,v])=>`<label class="field"><span>${l}</span><input id="${i}" type="number" inputmode="decimal" value="${v??0}"></label>`).join("")}</div>`:""}
+     <span class="label">${mode==="parts"?"Υλικά (για όλη τη συνταγή)":"Υλικά για τη λίστα ψωνιών (για όλη τη συνταγή)"}</span>
      <div class="opts">${rows.map((pt,i)=>{const f=food(pt.food);return `<div class="pitem"><span>${esc(f?f.name:"?")} <span class="muted small">${f&&f.u==="g"?"γρ.":esc(f?.pn||"τεμ.")}</span></span><input type="number" inputmode="decimal" id="pq-${i}" data-pq="${i}" value="${pt.qty}"><button class="btn sm danger" data-pr="${i}" aria-label="Αφαίρεση">×</button></div>`}).join("")||'<span class="note">Κανένα υλικό ακόμα.</span>'}</div>
      <select id="addPart"><option value="">+ Πρόσθεσε υλικό…</option>${S.lib.foods.map(f=>`<option value="${f.id}">${esc(f.name)}</option>`).join("")}</select>
-     <div class="tot">Σύνολο: ${nv(n)}</div>
+     <div class="tot" id="mtot">${servOf(m)>1?"Ανά μερίδα":"Σύνολο"}: ${nv(n)}</div>
      <div class="field"><span>Ταιριάζει για</span><div class="row">${SLOTS.map((s,i)=>`<label class="chip"><input type="checkbox" id="ms-${i}" data-ms="${i}" ${m.s?.includes(i)?"checked":""}> ${s.n} ${s.t}</label>`).join("")}</div></div>
      <div class="row"><button class="btn primary" id="ok">Αποθήκευση</button>${id?'<button class="btn danger" id="del">Διαγραφή</button>':""}</div><div id="delc"></div>`,bind)};
-  const grab=()=>{m.name=byId("mn").value;if(byId("mk")){m.kcal=num(byId("mk").value);m.p=num(byId("mp").value);m.c=num(byId("mc").value);m.f=num(byId("mf").value)}
+  const grab=()=>{m.name=byId("mn").value;m.n=Math.max(1,Math.round(+byId("mserv").value||1));if(byId("mk")){m.kcal=num(byId("mk").value);m.p=num(byId("mp").value);m.c=num(byId("mc").value);m.f=num(byId("mf").value)}
     document.querySelectorAll("[data-pq]").forEach(i=>list()[+i.dataset.pq].qty=num(i.value));
     m.s=[...document.querySelectorAll("[data-ms]")].filter(c=>c.checked).map(c=>+c.dataset.ms)};
   const bind=()=>{byId("x").onclick=closeSheet;
-    byId("mfix").onclick=()=>{grab();if(mode==="parts"&&m.parts.length){const n=mealNutr({parts:m.parts});Object.assign(m,{kcal:r1(n.k),p:r1(n.p),c:r1(n.c),f:r1(n.f)});m.ing=m.parts.map(x=>({...x}))}mode="fixed";draw()};
+    byId("mserv").oninput=()=>{grab();if(mode==="parts"){const n=mealNutr({parts:m.parts,n:m.n});byId("mtot").innerHTML=(m.n>1?"Ανά μερίδα":"Σύνολο")+": "+nv(n)}};
+    byId("mfix").onclick=()=>{grab();if(mode==="parts"&&m.parts.length){const n=mealNutr({parts:m.parts,n:m.n});Object.assign(m,{kcal:r1(n.k),p:r1(n.p),c:r1(n.c),f:r1(n.f)});m.ing=m.parts.map(x=>({...x}))}mode="fixed";draw()};
     byId("mpar").onclick=()=>{grab();if(mode==="fixed"&&!m.parts.length&&m.ing.length)m.parts=m.ing.map(x=>({...x}));mode="parts";draw()};
     ["mk","mp","mc","mf"].forEach(k=>{const e=byId(k);if(e)e.onchange=()=>{grab();draw()}});
     document.querySelectorAll("[data-pq]").forEach(i=>i.onchange=()=>{grab();draw()});
     document.querySelectorAll("[data-pr]").forEach(b=>b.onclick=()=>{grab();list().splice(+b.dataset.pr,1);draw()});
     byId("addPart").onchange=e=>{grab();const f=food(e.target.value);if(f){list().push({food:f.id,qty:f.u==="g"?100:1});draw()}};
-    byId("ok").onclick=()=>{grab();if(!m.name.trim()){toast("Δώσε όνομα στο γεύμα");return}
-      const fin={id:m.id,name:m.name.trim(),s:m.s,parts:mode==="parts"&&m.parts.length?m.parts:null,ing:mode==="fixed"&&m.ing.length?m.ing:null,kcal:m.kcal,p:m.p,c:m.c,f:m.f};
+    byId("ok").onclick=()=>{grab();if(!m.name.trim()){toast("Δώσε όνομα στη συνταγή");return}
+      const fin={id:m.id,name:m.name.trim(),s:m.s,parts:mode==="parts"&&m.parts.length?m.parts:null,ing:mode==="fixed"&&m.ing.length?m.ing:null,n:m.n>1?m.n:undefined,kcal:m.kcal,p:m.p,c:m.c,f:m.f};
       if(fin.parts){const n=mealNutr(fin);Object.assign(fin,{kcal:r1(n.k),p:r1(n.p),c:r1(n.c),f:r1(n.f)})}
       if(id){const ix=S.lib.meals.findIndex(x=>x.id===id);S.lib.meals[ix]=fin}else S.lib.meals.push(fin);saveLib();closeSheet();render();toast("Αποθηκεύτηκε")};
     const d=byId("del");if(d)d.onclick=()=>{byId("delc").innerHTML=`<div class="row"><span class="small">Θα φύγει από το πρόγραμμα και από σήμερα και μετά. Οι περασμένες μέρες κρατάνε τα νούμερά τους. Σίγουρα;</span><button class="btn danger sm" id="dy">Ναι, διαγραφή</button></div>`;
@@ -827,7 +835,7 @@ function editMeal(id){
 /* ---------- Διαγραφές που καθαρίζουν παντού ---------- */
 const ingOf=m=>(m.parts&&m.parts.length?m.parts:m.ing)||[];
 function snapshot(it){const n=itemNutr(it);return{id:it.id,slot:it.slot,type:"custom",name:itemName(it),kcal:r1(n.k),p:r1(n.p),c:r1(n.c),f:r1(n.f),qty:1}}
-function foodUsage(id){const out=[];S.lib.meals.forEach(m=>{if(ingOf(m).some(x=>x.food===id))out.push("γεύμα «"+m.name+"»")});
+function foodUsage(id){const out=[];S.lib.meals.forEach(m=>{if(ingOf(m).some(x=>x.food===id))out.push("συνταγή «"+m.name+"»")});
   const dn=DAYS.filter((_,d)=>S.plan.days[d].some(it=>it.type==="food"&&it.ref===id));if(dn.length)out.push("πρόγραμμα ("+dn.join(", ")+")");return out}
 async function applyEverywhere(mapItem){
   if(!S.allLoaded)await loadAllDays();
@@ -846,7 +854,7 @@ async function deleteFood(id,replId){
     if(past)return[snapshot(it)];
     if(!R)return[];
     if(hitF)return[{...it,ref:R.id}];
-    return[{id:it.id,slot:it.slot,type:"food",ref:R.id,qty:ingOf(meal(it.ref))[0].qty*(it.qty||1)}]});
+    return[{id:it.id,slot:it.slot,type:"food",ref:R.id,qty:ingOf(meal(it.ref))[0].qty*(it.qty||1)/servOf(meal(it.ref))}]});
   S.lib.meals=S.lib.meals.filter(m=>!single.has(m.id));
   S.lib.meals.forEach(m=>["parts","ing"].forEach(k=>{if(!Array.isArray(m[k]))return;if(R)m[k].forEach(x=>{if(x.food===id)x.food=R.id});else m[k]=m[k].filter(x=>x.food!==id)}));
   S.lib.foods=S.lib.foods.filter(f=>f.id!==id);saveLib();
