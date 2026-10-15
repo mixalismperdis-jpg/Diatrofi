@@ -164,8 +164,8 @@ header.top .wrap{gap:6px}
 /* tabs */
 nav.tabs{position:fixed;left:0;right:0;bottom:0;z-index:10;background:var(--surface);border-top:1px solid var(--line);
   padding:4px max(10px,env(safe-area-inset-right,0px)) calc(4px + env(safe-area-inset-bottom,0px)) max(10px,env(safe-area-inset-left,0px));display:flex;justify-content:center}
-nav.tabs .in{display:grid;grid-template-columns:repeat(4,1fr);max-width:720px;width:100%;gap:4px}
-nav.tabs button{border:0;background:transparent;padding:5px 4px;border-radius:10px;font-size:11px;font-weight:700;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:2px}
+nav.tabs .in{display:grid;grid-template-columns:repeat(5,1fr);max-width:720px;width:100%;gap:4px}
+nav.tabs button{white-space:nowrap;border:0;background:transparent;padding:5px 2px;border-radius:10px;font-size:11px;font-weight:700;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:2px}
 nav.tabs button svg{width:20px;height:20px}
 nav.tabs button.on{color:var(--ink)}
 
@@ -184,6 +184,28 @@ nav.tabs button.on{color:var(--ink)}
 .stepper input{width:100px;text-align:center;font-size:17px;font-weight:700}
 .pitem{display:grid;grid-template-columns:1fr 80px auto;gap:8px;align-items:center;font-size:13px}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(76px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:9px 15px;border-radius:99px;font-size:13px;font-weight:700;z-index:30}
+
+/* gym */
+.gli,.gpr{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;padding:9px 2px;border:0;border-bottom:1px solid var(--line);background:transparent;text-align:left;width:100%}
+.gpr{grid-template-columns:1fr 64px auto}
+.gli:last-child,.gpr:last-child{border-bottom:0}
+.gli .n,.gpr .n{min-width:0;font-size:14px;line-height:1.3}
+.gpr .v{font-size:13px;font-weight:700;white-space:nowrap;text-align:right}
+.spark{width:64px;height:22px;display:block}
+.up{color:var(--ok)} .dn{color:var(--warn)}
+.gtitle{font-size:16px;font-weight:700;border-color:transparent;background:transparent;padding:4px 2px}
+.gtitle:focus{border-color:var(--line);background:var(--surface)}
+.card.gex{gap:5px;padding:8px 10px}
+.gx-h{display:flex;gap:6px;align-items:center}
+.gx-n{flex:1;font-weight:700;font-size:14.5px;border-color:transparent;background:transparent;padding:4px 2px}
+.gx-n:focus{border-color:var(--line)}
+.gx-h select{width:auto;padding:4px 6px;font-size:12px;color:var(--muted)}
+.gprev{font-size:12px;color:var(--muted)}
+.gset{display:grid;grid-template-columns:18px minmax(0,78px) auto minmax(0,64px) auto auto;gap:6px;align-items:center;justify-content:start}
+.gset .sn{font-size:12px;color:var(--muted);font-weight:700;text-align:center}
+.gset input{padding:6px 8px;text-align:center;font-weight:700}
+.gset input::placeholder{color:var(--muted);opacity:.55;font-weight:500}
+.gset .x{font-size:12px;color:var(--muted)}
 @media (max-width:420px){.goals{grid-template-columns:1fr}.goal{flex-direction:row;justify-content:space-between;align-items:baseline;flex-wrap:wrap}}
 </style>
 
@@ -202,6 +224,7 @@ nav.tabs button.on{color:var(--ink)}
   <button id="tab-today" data-tab="today"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="3"/><path d="M3 9h18M8 2v4M16 2v4"/></svg>Σήμερα</button>
   <button id="tab-plan" data-tab="plan"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h10"/></svg>Πρόγραμμα</button>
   <button id="tab-foods" data-tab="foods"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3c4 0 7 3 7 8s-3 10-7 10-7-5-7-10 3-8 7-8z"/><path d="M12 3c-1 2-1 4 0 6"/></svg>Τρόφιμα</button>
+  <button id="tab-gym" data-tab="gym"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6.5 6v12M17.5 6v12M3 9.5v5M21 9.5v5M6.5 12h11"/></svg>Προπόνηση</button>
   <button id="tab-body" data-tab="body"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="2.5"/><path d="M6 10h12M12 10v11M8 21l4-6 4 6"/></svg>Το σώμα μου</button>
 </div></nav>
 
@@ -225,7 +248,7 @@ const DEFAULT_BODY={profile:{sex:"m",age:"",height:"",weight:"",activity:"1.55",
 
 /* ---------- Κατάσταση & βοηθητικά ---------- */
 const S={tab:"today",sub:"plan",lib:{ver:2,foods:DEFAULT_FOODS,meals:DEFAULT_MEALS},plan:null,body:DEFAULT_BODY,
-  date:null,day:null,dayEdited:false,docs:{},allLoaded:false,foodQ:"",suggSlot:null,shopRange:"rest"};
+  date:null,day:null,dayEdited:false,docs:{},gym:{},gymSub:"list",gymOpen:null,allLoaded:false,foodQ:"",suggSlot:null,shopRange:"rest"};
 const pad=n=>String(n).padStart(2,"0");
 const isoOf=d=>d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate());
 const todayISO=()=>isoOf(new Date());
@@ -261,7 +284,7 @@ const validItem=it=>it&&(it.type==="custom"||(it.type==="meal"?!!meal(it.ref):!!
 function planItems(iso){return (S.plan.days[wd(iso)]||[]).filter(validItem).map(x=>({...x,id:uid()}))}
 function dayItems(iso){if(iso===S.date)return S.day.items;const d=S.docs[iso];return d&&d.edited&&d.items?d.items:planItems(iso)}
 function dayLogged(iso){if(iso===S.date)return S.dayEdited;const d=S.docs[iso];return !!(d&&d.edited)}
-function isTrain(iso){const d=iso===S.date?S.day:S.docs[iso];if(d&&typeof d.train==="boolean")return d.train;return !!S.body.train.days[wd(iso)]}
+function isTrain(iso){const d=iso===S.date?S.day:S.docs[iso];if(d&&typeof d.train==="boolean")return d.train;if(gymOn(iso))return true;return !!S.body.train.days[wd(iso)]}
 
 /* ---------- Στόχοι ---------- */
 function bodyCalc(){
@@ -378,13 +401,14 @@ async function cloudPhase(){
     if(cl&&cl.foods){const v=cl.ver;S.lib=migrateLib(cl);if(v!==S.lib.ver)saveLib()}else saveLib();
     if(cp&&cp.days){S.plan=normPlan(cp);const ch=S.plan._changed;delete S.plan._changed;if(ch)savePlan()}else savePlan();
     if(cb&&cb.profile){S.body=mergeBody(cb);if(!S.body.since){S.body.since=todayISO();saveBody()}}else{S.body.since=S.body.since||todayISO();saveBody()}
-    await loadDay();setSync("Συγχρονισμένο");
+    await loadGym();await loadDay();setSync("Συγχρονισμένο");
   }catch(e){if(ST.db)setSync("Εκτός σύνδεσης · δουλεύεις από τη συσκευή");await loadDay()}}
 async function boot(){
   S.plan=normPlan(DEFAULT_PLAN);delete S.plan._changed;
   const lib=lsGet("lib"),plan=lsGet("plan"),body=lsGet("body");
   if(lib)S.lib=migrateLib(lib);if(plan){S.plan=normPlan(plan);delete S.plan._changed}if(body)S.body=mergeBody(body);
   const tb=lsGet("tab");if(tb)S.tab=tb;
+  Object.assign(S.gym,localGym());
   const ld=lsGet("day:"+S.date);S.docs[S.date]=ld;
   if(!S.body.since){S.body.since=todayISO();lsSet("body",S.body)}
   await loadDay();
@@ -412,7 +436,7 @@ function openLogin(){
         else msg("Έτοιμο. Σου στείλαμε email επιβεβαίωσης: πάτα τον σύνδεσμο (αν ανοίξει σελίδα που δεν φορτώνει, δεν πειράζει) και μετά γύρνα εδώ και πάτα «Σύνδεση».")}catch(e){msg(errTxt(e))}};
     byId("lgSkip").onclick=()=>{lsSet("localOnly",true);closeSheet()}})}
 async function backupDownload(){
-  await loadAllDays();const out={};
+  await loadAllDays();await loadGym();const out={};
   try{for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k.startsWith("diatrofi:")&&!/^diatrofi:(auth|dirty|tab|lastEmail|localOnly|shop:)/.test(k))out[k.slice(9)]=JSON.parse(localStorage.getItem(k))}}catch(e){}
   const blob=new Blob([JSON.stringify({app:"diatrofi",date:todayISO(),data:out},null,1)],{type:"application/json"});
   const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="diatrofi-"+todayISO()+".json";document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),4000)}
@@ -453,9 +477,9 @@ function suggest(Rk,Rp,slot){
 const main=byId("main");
 function render(){
   document.querySelectorAll("nav.tabs button").forEach(b=>b.classList.toggle("on",b.dataset.tab===S.tab));
-  byId("hTitle").textContent={today:"Σήμερα",plan:S.sub==="shop"?"Λίστα για ψώνια":"Εβδομαδιαίο πρόγραμμα",foods:"Τρόφιμα & γεύματα",body:"Το σώμα μου"}[S.tab];
+  byId("hTitle").textContent={today:"Σήμερα",plan:S.sub==="shop"?"Λίστα για ψώνια":"Εβδομαδιαίο πρόγραμμα",foods:"Τρόφιμα & γεύματα",body:"Το σώμα μου",gym:"Προπόνηση"}[S.tab];
   renderGauges();
-  ({today:renderToday,plan:renderPlan,foods:renderFoods,body:renderBody})[S.tab]()}
+  ({today:renderToday,plan:renderPlan,foods:renderFoods,body:renderBody,gym:renderGym})[S.tab]()}
 
 function renderGauges(){
   const box=byId("gaugeBox");
@@ -916,9 +940,192 @@ function weightChart(hist){
    <text x="${W-R}" y="${H-8}" text-anchor="end" font-size="11" fill="var(--muted)">${fmtD(last.date)}</text>
   </svg></div>`}
 
+/* ---------- Προπόνηση ---------- */
+/* έγγραφο gym:YYYY-MM-DD = {title, ex:[{n, m:"w"|"bw"|"t", sets:[{w,r,s}]}]} · r αριθμός ή "max" · διαγραφή = {deleted:true} */
+const GDAYS=["ΔΕΥΤΕΡΑ","ΤΡΙΤΗ","ΤΕΤΑΡΤΗ","ΠΕΜΠΤΗ","ΠΑΡΑΣΚΕΥΗ","ΣΑΒΒΑΤΟ","ΚΥΡΙΑΚΗ"];
+const deacc=s=>String(s??"").normalize("NFD").replace(/[̀-ͯ]/g,"");
+const exKey=n=>deacc(n).toLowerCase().replace(/\s+/g," ").trim();
+const pnum=s=>{s=String(s??"").trim().replace(",",".");if(!s)return null;const v=parseFloat(s);return isFinite(v)&&v>=0?v:null};
+const kg=w=>String(r1(w)).replace(".",",");
+const gymOn=iso=>{const g=S.gym[iso];return !!(g&&!g.deleted&&g.ex&&g.ex.length)};
+const gymDates=()=>Object.keys(S.gym).filter(gymOn).sort().reverse();
+function localGym(){const out={};try{for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&k.startsWith("diatrofi:gym:"))out[k.slice(13)]=JSON.parse(localStorage.getItem(k))}}catch(e){}return out}
+const cloudGym=()=>rest("GET","?key=like.gym:*&select=key,value");
+async function loadGym(){
+  Object.assign(S.gym,localGym());
+  if(ST.db){try{const rows=await cloudGym();(rows||[]).forEach(r=>{const d=r.key.slice(4),loc=S.gym[d];
+    if(!loc||newer(r.key,r.value,loc)==="cloud"){S.gym[d]=r.value;lsSet(r.key,r.value)}})}catch(e){}}}
+function saveGym(d){save("gym:"+d,S.gym[d])}
+const repN=r=>typeof r==="number"?r:0;
+function setTxt(st,m){if(m==="t")return st.s!=null?st.s+"″":"—";const r=st.r==null?"—":st.r;return m==="bw"||st.w==null?String(r):kg(st.w)+"×"+r}
+const setsTxt=e=>e.sets.map(s=>setTxt(s,e.m||"w")).join(" · ");
+function exStat(e){const m=e.m||"w",ok=e.sets.filter(s=>m==="t"?s.s!=null:s.r!=null);if(!ok.length)return null;
+  if(m==="t"){const v=Math.max(...ok.map(s=>s.s));return{m,v,cmp:v,txt:v+"″",unit:"δευτ."}}
+  const ws=ok.filter(s=>s.w!=null);
+  if(m==="bw"||!ws.length){const tot=ok.reduce((a,s)=>a+repN(s.r),0);return{m:"bw",v:tot||null,cmp:tot,txt:tot?tot+" επαν.":ok.length+"×max",unit:"επαν."}}
+  const top=Math.max(...ws.map(s=>s.w)),reps=Math.max(...ws.filter(s=>s.w===top).map(s=>repN(s.r)));
+  return{m,v:top,cmp:Math.max(...ws.map(s=>s.w*(1+repN(s.r)/30))),vol:ws.reduce((a,s)=>a+s.w*repN(s.r),0),txt:kg(top)+" κ. × "+(reps||"max"),unit:"κ."}}
+function exHistory(key){const out=[];gymDates().reverse().forEach(d=>(S.gym[d].ex||[]).forEach(e=>{if(exKey(e.n)===key){const st=exStat(e);if(st)out.push({d,e,st})}}));return out}
+function prevEx(key,before){for(const d of gymDates()){if(d>=before)continue;const e=(S.gym[d].ex||[]).find(x=>exKey(x.n)===key&&exStat(x));if(e)return{d,e}}return null}
+function allExercises(){const map={};gymDates().forEach(d=>(S.gym[d].ex||[]).forEach(e=>{const k=exKey(e.n);if(k&&!map[k])map[k]={k,n:e.n.trim(),last:d}}));return Object.values(map)}
+
+/* εισαγωγή από σημειώσεις κινητού */
+function parseSpec(s){let w=null,sec=null;s=s.replace(/(\d),(\d)/g,"$1.$2");
+  s=s.replace(/(\d+(?:\.\d+)?)\s*(?:kg|κιλ[άα]?|κ\.?)(?=[\sxχ×*]|$)/i,(_,v)=>{w=+v;return " "});
+  s=s.replace(/(\d+(?:\.\d+)?)\s*(?:λεπτ[άαό]?|min)\S*/i,(_,v)=>{sec=Math.round(v*60);return " "});
+  s=s.replace(/(\d+)\s*(?:δευτ\S*|sec\S*|s(?=\s|$)|''|"|″)/i,(_,v)=>{sec=+v;return " "});
+  return{w,sec,toks:(s.match(/\d+(?:\.\d+)?|max/gi)||[]).map(t=>/max/i.test(t)?"max":Math.round(+t))}}
+function parseNotes(txt){
+  const lines=txt.split(/\r?\n/).map(l=>l.trim()).filter(Boolean),hasNum=l=>/\d|max/i.test(l);
+  let title="",dow=null,i=0;
+  if(lines.length&&!hasNum(lines[0])){const up=deacc(lines[0]).toUpperCase(),di=GDAYS.findIndex(x=>up.includes(x));
+    if(di>=0||(lines[1]&&!hasNum(lines[1]))){dow=di>=0?di:null;i=1;
+      title=lines[0].replace(/^[^\p{L}\p{N}]+/u,"");if(di>=0)title=deacc(title).toUpperCase().startsWith(GDAYS[di])?title.slice(GDAYS[di].length):title;
+      title=title.replace(/^[\s–—\-:·|]+/,"").trim()}}
+  const ex=[];let cur=null;
+  for(;i<lines.length;i++){const l=lines[i];
+    const sm=l.match(/^\d+\s*\S{0,2}\s*σετ\s*[:.\-]?\s*(.*)$/i);
+    if(sm||(!/^[^\d]*\p{L}{2}/u.test(l)&&hasNum(l)&&cur)){ // γραμμή σετ
+      if(!cur)continue;const sp=parseSpec(sm?sm[1]:l),r=sp.toks.length?sp.toks[sp.toks.length-1]:null;
+      cur.sets.push({w:sp.w,r:sp.sec!=null&&sp.toks.length===0?null:r,s:sp.sec});continue}
+    if(!hasNum(l)){cur={n:l.replace(/[:\-–]+$/,"").trim(),sets:[]};ex.push(cur);continue}
+    const at=l.search(/\d|max/i),name=l.slice(0,at).replace(/[:\-–(]+\s*$/,"").trim(),sp=parseSpec(l.slice(at));
+    let n=1,st;
+    if(sp.sec!=null){n=typeof sp.toks[0]==="number"?sp.toks[0]:1;st={w:sp.w,r:null,s:sp.sec}}
+    else if(sp.toks.length>=2){n=typeof sp.toks[0]==="number"?sp.toks[0]:1;st={w:sp.w,r:sp.toks[1],s:null};if(sp.w==null&&typeof sp.toks[2]==="number")st.w=sp.toks[2]}
+    else st={w:sp.w,r:sp.toks[0]??null,s:null};
+    n=Math.min(Math.max(1,n),10);cur={n:name||"Άσκηση",sets:Array.from({length:n},()=>({...st}))};ex.push(cur)}
+  const out=ex.filter(e=>e.sets.length).map(e=>({n:e.n,m:e.sets.some(s=>s.s!=null)?"t":e.sets.every(s=>s.w==null)?"bw":"w",sets:e.sets}));
+  return{title,dow,ex:out}}
+
+/* προβολές */
+function gymStatsHTML(){const t=todayISO(),ws=weekStart(t),ds=gymDates();
+  const w=ds.filter(d=>d>=ws&&d<=t).length,m=ds.filter(d=>d.startsWith(t.slice(0,7))).length;
+  return `<div class="stats" style="grid-template-columns:repeat(3,1fr)"><div class="stat"><span class="label">Εβδομάδα</span><span class="x">${w}</span></div><div class="stat"><span class="label">Μήνας</span><span class="x">${m}</span></div><div class="stat"><span class="label">Σύνολο</span><span class="x">${ds.length}</span></div></div>`}
+function renderGym(){
+  if(S.gymOpen&&gymOn(S.gymOpen)||S.gymOpen&&S.gym[S.gymOpen]&&!S.gym[S.gymOpen].deleted)return renderGymEdit();
+  S.gymOpen=null;
+  let h=`<div class="row between"><div class="seg"><button id="gs-list" class="${S.gymSub!=="prog"?"on":""}">Προπονήσεις</button><button id="gs-prog" class="${S.gymSub==="prog"?"on":""}">Πρόοδος</button></div>
+    <div class="row"><button class="btn sm" id="gImp">Επικόλληση</button><button class="btn sm primary" id="gNew">+ Νέα</button></div></div>`;
+  const ds=gymDates();
+  if(S.gymSub==="prog"){
+    const exs=allExercises();
+    h+=`<section class="card" style="gap:4px"><div class="row between"><h3>Ασκήσεις</h3><span class="small muted">κορυφαίο σετ τελευταίας φοράς</span></div>`;
+    if(!exs.length)h+=`<p class="note">Η πρόοδος εμφανίζεται όταν καταγράψεις προπονήσεις.</p>`;
+    h+=`<div class="list">${exs.map(x=>{const hs=exHistory(x.k);if(!hs.length)return "";const last=hs[hs.length-1],prev=hs[hs.length-2];
+      let tr="";if(prev){const d=last.st.cmp-prev.st.cmp;tr=Math.abs(d)<.01?`<span class="muted">=</span>`:d>0?`<span class="up">↑</span>`:`<span class="dn">↓</span>`}
+      return `<button class="gpr" data-ex="${esc(x.k)}"><span class="n">${esc(x.n)}<br><span class="small muted">${hs.length} ${hs.length===1?"φορά":"φορές"} · ${fmtD(last.d)}</span></span>${spark(hs.map(o=>o.st.v))}<span class="v">${tr} ${esc(last.st.txt)}</span></button>`}).join("")}</div>
+      <p class="note">↑ ↓ σε σχέση με την προηγούμενη φορά. Για ασκήσεις με κιλά μετράει το καλύτερο σετ (κιλά και επαναλήψεις μαζί), οπότε και 1 επανάληψη παραπάνω στα ίδια κιλά είναι πρόοδος.</p></section>`}
+  else{
+    h+=`<section class="card">${gymStatsHTML()}</section>`;
+    if(!ds.length)h+=`<section class="card"><p class="note">Δεν υπάρχει προπόνηση ακόμα. Πάτα «+ Νέα» για να γράψεις τη σημερινή, ή «Από σημειώσεις» για να επικολλήσεις όσα κρατάς στο κινητό.</p></section>`;
+    else h+=`<section class="card" style="gap:0;padding-block:4px"><div class="list">${ds.map(d=>{const g=S.gym[d],n=g.ex.reduce((a,e)=>a+e.sets.length,0);
+      return `<button class="gli" data-gopen="${d}"><span class="n"><b>${DSH[wd(d)]} ${fmtD(d)}</b>${g.title?" · "+esc(g.title):""}</span><span class="small muted">${g.ex.length} ασκ. · ${n} σετ</span></button>`}).join("")}</div></section>`}
+  main.innerHTML=h;
+  byId("gs-list").onclick=()=>{S.gymSub="list";render()};byId("gs-prog").onclick=()=>{S.gymSub="prog";render()};
+  byId("gNew").onclick=openNewGym;byId("gImp").onclick=openImport;
+  main.querySelectorAll("[data-gopen]").forEach(b=>b.onclick=()=>{S.gymOpen=b.dataset.gopen;window.scrollTo(0,0);render()});
+  main.querySelectorAll("[data-ex]").forEach(b=>b.onclick=()=>openExSheet(b.dataset.ex))}
+function spark(vs){vs=vs.filter(v=>v!=null).slice(-10);if(vs.length<2)return `<span></span>`;
+  const W=64,H=22,lo=Math.min(...vs),hi=Math.max(...vs),y=v=>hi===lo?H/2:2+(hi-v)/(hi-lo)*(H-4),x=i=>2+i*(W-4)/(vs.length-1);
+  return `<svg class="spark" viewBox="0 0 ${W} ${H}" aria-hidden="true"><polyline points="${vs.map((v,i)=>x(i).toFixed(1)+","+y(v).toFixed(1)).join(" ")}" fill="none" stroke="var(--ink)" stroke-width="1.6" stroke-linejoin="round"/><circle cx="${x(vs.length-1)}" cy="${y(vs[vs.length-1])}" r="2.4" fill="var(--prot)"/></svg>`}
+function lineChart(pts,label,unit){if(pts.length<2)return `<p class="note">Το γράφημα εμφανίζεται από τη 2η φορά.</p>`;
+  const W=640,H=180,L=44,R=16,T=14,B=28,t0=+parseISO(pts[0].d),t1=+parseISO(pts[pts.length-1].d);
+  let lo=Math.min(...pts.map(p=>p.v)),hi=Math.max(...pts.map(p=>p.v));if(hi-lo<2){lo-=1;hi+=1}lo=Math.floor(lo);hi=Math.ceil(hi);
+  const x=t=>L+(t1===t0?0:(t-t0)/(t1-t0))*(W-L-R),y=v=>T+(hi-v)/(hi-lo)*(H-T-B),step=Math.max(1,Math.ceil((hi-lo)/4)),ticks=[];for(let v=lo;v<=hi;v+=step)ticks.push(v);
+  const first=pts[0],last=pts[pts.length-1],diff=r1(last.v-first.v);
+  return `<div class="chart"><div class="row between"><span class="label">${label}</span><span class="small">${diff>0?"+":""}${String(diff).replace(".",",")} ${unit} από ${fmtD(first.d)}</span></div>
+  <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${label}">
+   ${ticks.map(v=>`<line x1="${L}" x2="${W-R}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)"/><text x="${L-8}" y="${y(v)+4}" text-anchor="end" font-size="11" fill="var(--muted)">${v}</text>`).join("")}
+   <path d="${pts.map((p,i)=>(i?"L":"M")+x(+parseISO(p.d)).toFixed(1)+","+y(p.v).toFixed(1)).join(" ")}" fill="none" stroke="var(--ink)" stroke-width="2.5" stroke-linejoin="round"/>
+   ${pts.map(p=>`<circle cx="${x(+parseISO(p.d))}" cy="${y(p.v)}" r="3" fill="var(--ink)"/>`).join("")}
+   <text x="${L}" y="${H-8}" font-size="11" fill="var(--muted)">${fmtD(first.d)}</text><text x="${W-R}" y="${H-8}" text-anchor="end" font-size="11" fill="var(--muted)">${fmtD(last.d)}</text>
+  </svg></div>`}
+function openExSheet(k){const hs=exHistory(k);if(!hs.length)return;const last=hs[hs.length-1],m=last.st.m,name=last.e.n;
+  const pts=hs.filter(o=>o.st.v!=null).map(o=>({d:o.d,v:o.st.v}));
+  const label=m==="t"?"Χρόνος (δευτ.)":m==="bw"?"Επαναλήψεις συνολικά":"Μέγιστο βάρος (κιλά)";
+  let h=`<h2>${esc(name)}</h2>${lineChart(pts,label,m==="t"?"δευτ.":m==="bw"?"επαν.":"κ.")}`;
+  if(m==="w"){const vp=hs.filter(o=>o.st.vol).map(o=>({d:o.d,v:Math.round(o.st.vol)}));if(vp.length>=2)h+=lineChart(vp,"Όγκος (κιλά × επαναλήψεις)","")}
+  h+=`<div class="tbl"><table style="min-width:0"><thead><tr><th>Ημ/νία</th><th>Σετ</th>${m==="w"?"<th>Όγκος</th>":""}</tr></thead><tbody>
+   ${hs.slice().reverse().map(o=>`<tr><td>${fmtD(o.d)}</td><td>${esc(setsTxt(o.e))}</td>${m==="w"?`<td>${o.st.vol?Math.round(o.st.vol):"—"}</td>`:""}</tr>`).join("")}</tbody></table></div>
+   <button class="btn" id="exClose" style="align-self:flex-start">Κλείσιμο</button>`;
+  sheet(h,()=>{byId("exClose").onclick=closeSheet})}
+
+function openNewGym(){
+  const tpls=[];const seen=new Set();gymDates().forEach(d=>{const t=exKey(S.gym[d].title)||"#"+d;if(!seen.has(t)){seen.add(t);tpls.push(d)}});
+  const list=d=>{const sorted=tpls.slice(0,12).sort((a,b)=>(wd(b)===wd(d))-(wd(a)===wd(d)));
+    return sorted.map(t=>`<button class="opt" data-tpl="${t}"><span>Όπως ${esc(S.gym[t].title||"την προπόνηση")} <span class="muted small">${DSH[wd(t)]} ${fmtD(t)}</span></span><span class="v">${S.gym[t].ex.length} ασκ.</span></button>`).join("")};
+  sheet(`<h2>Νέα προπόνηση</h2><label class="field"><span>Ημερομηνία</span><input type="date" id="ngD" value="${todayISO()}"></label>
+    ${tpls.length?`<span class="label">Ξεκίνα από προηγούμενη</span><div class="opts" id="ngT">${list(todayISO())}</div><p class="note">Παίρνει τις ίδιες ασκήσεις και κιλά. Τις επαναλήψεις της προηγούμενης φοράς τις βλέπεις αχνά για να τις ξεπεράσεις.</p>`:""}
+    <button class="btn" id="ngE" style="align-self:flex-start">Κενή προπόνηση</button>`,()=>{
+    const go=tpl=>{const d=byId("ngD").value||todayISO();
+      if(gymOn(d)){closeSheet();S.gymOpen=d;render();toast("Υπάρχει ήδη προπόνηση εκείνη τη μέρα");return}
+      const src=tpl&&S.gym[tpl];
+      S.gym[d]={title:src?src.title:"",ex:src?src.ex.map(e=>({n:e.n,m:e.m||"w",sets:e.sets.map(s=>({w:s.w,r:null,s:null}))})):[]};
+      saveGym(d);S.gymOpen=d;closeSheet();window.scrollTo(0,0);render()};
+    const bind=()=>byId("ngT")&&byId("ngT").querySelectorAll("[data-tpl]").forEach(b=>b.onclick=()=>go(b.dataset.tpl));bind();
+    byId("ngD").onchange=e=>{if(byId("ngT")){byId("ngT").innerHTML=list(e.target.value||todayISO());bind()}};
+    byId("ngE").onclick=()=>go(null)})}
+
+function openImport(){
+  sheet(`<h2>Από σημειώσεις</h2><p class="note">Επικόλλησε μία προπόνηση όπως τη γράφεις στο κινητό (π.χ. «1° σετ 260kg x 12», «Cable Crunch 70kg x 3 x 15», «Plank 3 x 45 δευτερόλεπτα»).</p>
+    <textarea id="imT" rows="9" style="width:100%;font:inherit;font-size:14px;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:inherit"></textarea>
+    <label class="field"><span>Ημερομηνία</span><input type="date" id="imD" value="${todayISO()}"></label>
+    <div id="imP"></div><div class="row"><button class="btn primary" id="imS" disabled>Αποθήκευση</button><button class="btn" id="imC">Άκυρο</button></div>`,()=>{
+    let res=null,dTouched=false;
+    const upd=()=>{res=parseNotes(byId("imT").value);
+      if(!dTouched&&res.dow!=null){let d=todayISO();while(wd(d)!==res.dow)d=addDays(d,-1);byId("imD").value=d}
+      const d=byId("imD").value;
+      byId("imP").innerHTML=res.ex.length?`<div class="card" style="gap:4px"><b>${esc(res.title||"Προπόνηση")}</b>${res.ex.map(e=>`<div class="small"><b>${esc(e.n)}</b> <span class="muted">${esc(setsTxt(e))}</span></div>`).join("")}</div>${gymOn(d)?`<p class="note" style="color:var(--warn)">Υπάρχει ήδη προπόνηση στις ${fmtD(d)}: θα αντικατασταθεί.</p>`:""}`:"";
+      byId("imS").disabled=!res.ex.length};
+    byId("imT").oninput=upd;byId("imD").onchange=()=>{dTouched=true;upd()};byId("imC").onclick=closeSheet;
+    byId("imS").onclick=()=>{const d=byId("imD").value||todayISO();S.gym[d]={title:res.title,ex:res.ex};saveGym(d);closeSheet();S.gymOpen=d;window.scrollTo(0,0);render();toast("Η προπόνηση αποθηκεύτηκε")}})}
+
+function renderGymEdit(){
+  const d=S.gymOpen,g=S.gym[d];
+  const known=allExercises();
+  let h=`<div class="row between"><button class="btn sm" id="gBack">‹ Όλες</button><input type="date" id="gDate" value="${d}" style="width:auto;padding:5px 8px"></div>
+    <input class="gtitle" id="gTitle" value="${esc(g.title)}" placeholder="Τίτλος, π.χ. Legs & Abs">`;
+  g.ex.forEach((e,i)=>{const m=e.m||"w",pv=prevEx(exKey(e.n),d),ps=pv?pv.e.sets:[],st=exStat(e);
+    const best=exHistory(exKey(e.n)).filter(o=>o.d<d).reduce((a,o)=>Math.max(a,o.st.cmp),0),pr=st&&best>0&&st.cmp>best+.01;
+    h+=`<section class="card gex"><div class="gx-h"><input class="gx-n" data-xn="${i}" value="${esc(e.n)}" aria-label="Όνομα άσκησης">
+      ${pr?`<span class="chip on">ρεκόρ</span>`:""}<select data-xm="${i}" aria-label="Τύπος">${[["w","κιλά"],["bw","χωρίς βάρος"],["t","χρόνος"]].map(([v,l])=>`<option value="${v}" ${m===v?"selected":""}>${l}</option>`).join("")}</select>
+      <button class="btn ghost sm" data-xdel="${i}" aria-label="Διαγραφή άσκησης">×</button></div>
+      ${pv?`<div class="gprev">Προηγ. ${fmtD(pv.d)}: ${esc(setsTxt(pv.e))}</div>`:""}`;
+    e.sets.forEach((s,j)=>{const p=ps[j]||{},k=i+"."+j;
+      h+=`<div class="gset"><span class="sn">${j+1}</span>`;
+      if(m==="w")h+=`<input data-sw="${k}" inputmode="decimal" value="${s.w!=null?kg(s.w):""}" placeholder="${p.w!=null?kg(p.w):"κιλά"}"><span class="x">κ. ×</span>`;
+      if(m==="t")h+=`<input data-ss="${k}" inputmode="numeric" value="${s.s??""}" placeholder="${p.s??"δευτ."}"><span class="x">δευτ.</span>`;
+      else h+=`<input data-sr="${k}" inputmode="numeric" value="${s.r??""}" placeholder="${p.r??"επαν."}">${m==="bw"?`<button class="btn ghost sm" data-smax="${k}">max</button>`:""}`;
+      h+=`<button class="btn ghost sm" data-sdel="${k}" aria-label="Διαγραφή σετ">×</button></div>`});
+    h+=`<button class="btn sm" data-sadd="${i}" style="align-self:flex-start">+ Σετ</button></section>`});
+  h+=`<section class="card"><div class="row"><input id="gxNew" list="gxList" placeholder="Νέα άσκηση" class="grow" autocomplete="off"><button class="btn sm primary" id="gxAdd">+ Άσκηση</button></div>
+    <datalist id="gxList">${known.map(x=>`<option value="${esc(x.n)}">`).join("")}</datalist></section>
+    <button class="btn danger sm" id="gDel" style="align-self:flex-start">Διαγραφή προπόνησης</button>`;
+  main.innerHTML=h;
+  const sv=()=>saveGym(d),ij=a=>a.split(".").map(Number);
+  byId("gBack").onclick=()=>{S.gymOpen=null;render()};
+  byId("gTitle").onchange=e=>{g.title=e.target.value.trim();sv()};
+  byId("gDate").onchange=e=>{const nd=e.target.value;if(!nd||nd===d)return;
+    if(gymOn(nd)){toast("Υπάρχει ήδη προπόνηση στις "+fmtD(nd));e.target.value=d;return}
+    S.gym[nd]={title:g.title,ex:g.ex};S.gym[d]={deleted:true};saveGym(nd);saveGym(d);S.gymOpen=nd;render();toast("Μεταφέρθηκε στις "+fmtD(nd))};
+  main.querySelectorAll("[data-xn]").forEach(el=>el.onchange=()=>{const v=el.value.trim();if(v){g.ex[+el.dataset.xn].n=v;sv()}});
+  main.querySelectorAll("[data-xm]").forEach(el=>el.onchange=()=>{g.ex[+el.dataset.xm].m=el.value;sv();render()});
+  main.querySelectorAll("[data-xdel]").forEach(b=>b.onclick=()=>{const e=g.ex[+b.dataset.xdel];if(e.sets.some(s=>s.r!=null||s.s!=null)&&!confirm("Διαγραφή της άσκησης «"+e.n+"»;"))return;g.ex.splice(+b.dataset.xdel,1);sv();render()});
+  main.querySelectorAll("[data-sw]").forEach(el=>el.onchange=()=>{const [i,j]=ij(el.dataset.sw);g.ex[i].sets[j].w=pnum(el.value);sv()});
+  main.querySelectorAll("[data-sr]").forEach(el=>el.onchange=()=>{const [i,j]=ij(el.dataset.sr),v=el.value.trim().toLowerCase(),n=pnum(v);g.ex[i].sets[j].r=v==="max"?"max":n==null?null:Math.round(n);sv()});
+  main.querySelectorAll("[data-ss]").forEach(el=>el.onchange=()=>{const [i,j]=ij(el.dataset.ss),n=pnum(el.value);g.ex[i].sets[j].s=n==null?null:Math.round(n);sv()});
+  main.querySelectorAll("[data-smax]").forEach(b=>b.onclick=()=>{const [i,j]=ij(b.dataset.smax);g.ex[i].sets[j].r="max";sv();render()});
+  main.querySelectorAll("[data-sdel]").forEach(b=>b.onclick=()=>{const [i,j]=ij(b.dataset.sdel);g.ex[i].sets.splice(j,1);sv();render()});
+  main.querySelectorAll("[data-sadd]").forEach(b=>b.onclick=()=>{const e=g.ex[+b.dataset.sadd],l=e.sets[e.sets.length-1];e.sets.push({w:l?l.w:null,r:null,s:null});sv();render()});
+  byId("gxAdd").onclick=()=>{const n=byId("gxNew").value.trim();if(!n)return;const pv=prevEx(exKey(n),d);
+    g.ex.push(pv?{n:pv.e.n,m:pv.e.m||"w",sets:pv.e.sets.map(s=>({w:s.w,r:null,s:null}))}:{n,m:"w",sets:[{w:null,r:null,s:null},{w:null,r:null,s:null},{w:null,r:null,s:null}]});sv();render()};
+  byId("gxNew").onkeydown=e=>{if(e.key==="Enter")byId("gxAdd").click()};
+  byId("gDel").onclick=()=>{if(!confirm("Διαγραφή της προπόνησης της "+fmtD(d)+";"))return;S.gym[d]={deleted:true};sv();S.gymOpen=null;render();toast("Η προπόνηση διαγράφηκε")}}
+
 /* ---------- misc ---------- */
 let tt;function toast(m){clearTimeout(tt);let el=byId("toast");if(!el){el=document.createElement("div");el.id="toast";el.className="toast";el.setAttribute("role","status");document.body.appendChild(el)}el.textContent=m;el.hidden=false;tt=setTimeout(()=>el.hidden=true,1800)}
-document.querySelectorAll("nav.tabs button").forEach(b=>b.onclick=()=>{S.tab=b.dataset.tab;lsSet("tab",S.tab);closeSheet();window.scrollTo(0,0);render()});
+document.querySelectorAll("nav.tabs button").forEach(b=>b.onclick=()=>{if(b.dataset.tab==="gym"&&S.tab==="gym")S.gymOpen=null;S.tab=b.dataset.tab;lsSet("tab",S.tab);closeSheet();window.scrollTo(0,0);render()});
 boot();
 if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{});
 </script>
