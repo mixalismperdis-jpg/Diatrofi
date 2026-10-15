@@ -187,6 +187,9 @@ nav.tabs button.on{color:var(--ink)}
 .stepper .btn{width:40px;height:40px;padding:0;font-size:18px}
 .stepper input{width:100px;text-align:center;font-size:17px;font-weight:700}
 .pitem{display:grid;grid-template-columns:1fr 64px auto auto;gap:6px;align-items:center;font-size:13px}
+.ingl{display:flex;flex-direction:column;border-top:1px solid var(--line);font-size:13.5px}
+.ingl div{display:grid;grid-template-columns:1fr auto;gap:10px;padding:4px 2px;border-bottom:1px solid var(--line)}
+.ingl b{font-weight:700;white-space:nowrap}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(76px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:9px 15px;border-radius:99px;font-size:13px;font-weight:700;z-index:30}
 
 /* gym */
@@ -239,7 +242,7 @@ nav.tabs button.on{color:var(--ink)}
 /* ---------- Αρχικά δεδομένα (από το αρχείο Numbers) ---------- */
 // Έκδοση: ίδιο νούμερο με το C στο sw.js. Η ώρα δεν γράφεται με το χέρι: είναι η ώρα που ανέβηκε το index.html
 // στο GitHub Pages (κεφαλίδα Last-Modified της απάντησης που φυλάει το service worker), σε ώρα της συσκευής.
-const APP_VER={v:"v18",at:""};
+const APP_VER={v:"v19",at:""};
 function fmtDT(d){const p2=n=>String(n).padStart(2,"0");return `${p2(d.getDate())}/${p2(d.getMonth()+1)}/${d.getFullYear()} ${p2(d.getHours())}:${p2(d.getMinutes())}`}
 async function loadVerTime(){let lm=null;
   try{const r=await caches.match(location.href,{ignoreSearch:true})||await caches.match("./index.html");lm=r&&r.headers.get("last-modified")}catch(e){}
@@ -656,6 +659,8 @@ function openAddSheet(slot,replaceId){
     byId("x").onclick=closeSheet;byId("q").oninput=e=>{q=e.target.value;draw()};draw();
     byId("scanBtn").onclick=()=>startScan(slot,replaceId)})}
 
+function ingLines(m,v){const k=v/servOf(m);return ingOf(m).map(x=>{const f=food(x.food);if(!f)return"";const q=x.qty*k;
+  return `<div><span>${esc(f.name)}</span><b>${f.u==="g"?esc(gramsTxt(f,q)):esc(nEl(q)+" "+plur(f.pn||"τεμ.",q))}</b></div>`}).join("")}
 function openItemSheet(id){
   const it=TG.get().find(x=>x.id===id);if(!it)return;
   const isMeal=it.type==="meal",isCustom=it.type==="custom",f=it.type==="food"?food(it.ref):null,st=(isMeal||isCustom)?.5:(f&&f.u==="g"?5:.5);
@@ -665,9 +670,10 @@ function openItemSheet(id){
     <h2>${esc(itemName(it))}</h2><div class="preview" id="pv"></div>
     <div class="field"><span>${unitLbl}</span>
     ${f?qtyBox(f,it.qty||1):`<div class="stepper"><button class="btn" id="qm">−</button><input id="qty" type="number" inputmode="decimal" step="${st}" value="${it.qty||1}"><button class="btn" id="qp">+</button></div>`}</div>
+    ${isMeal&&ingOf(meal(it.ref)).length?'<div class="field"><span>Υλικά για αυτή την ποσότητα</span><div class="ingl" id="ingl"></div></div>':""}
     <div class="row"><button class="btn primary" id="ok">Αποθήκευση</button><button class="btn" id="swap">Αλλαγή με άλλο</button><button class="btn danger" id="del">Αφαίρεση</button></div>`,()=>{
     const calc=v=>itemNutr({...it,qty:v});
-    const show=v=>{const n=calc(v);byId("pv").innerHTML=nv(n)+"<br>"+previewLine({k:n.k-base.k,p:n.p-base.p,c:n.c-base.c,f:n.f-base.f})};
+    const show=v=>{const n=calc(v);byId("pv").innerHTML=nv(n)+"<br>"+previewLine({k:n.k-base.k,p:n.p-base.p,c:n.c-base.c,f:n.f-base.f});const il=byId("ingl");if(il)il.innerHTML=ingLines(meal(it.ref),v)};
     let get;if(f)get=bindQty(f,show);else{get=()=>+byId("qty").value||0;const upd=()=>show(get());
       byId("qm").onclick=()=>{byId("qty").value=Math.max(0,(+byId("qty").value||0)-st);upd()};byId("qp").onclick=()=>{byId("qty").value=(+byId("qty").value||0)+st;upd()};
       byId("qty").oninput=upd;upd()}
