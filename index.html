@@ -239,7 +239,7 @@ nav.tabs button.on{color:var(--ink)}
 /* ---------- Αρχικά δεδομένα (από το αρχείο Numbers) ---------- */
 // Έκδοση: ίδιο νούμερο με το C στο sw.js. Η ώρα δεν γράφεται με το χέρι: είναι η ώρα που ανέβηκε το index.html
 // στο GitHub Pages (κεφαλίδα Last-Modified της απάντησης που φυλάει το service worker), σε ώρα της συσκευής.
-const APP_VER={v:"v15",at:""};
+const APP_VER={v:"v16",at:""};
 function fmtDT(d){const p2=n=>String(n).padStart(2,"0");return `${p2(d.getDate())}/${p2(d.getMonth()+1)}/${d.getFullYear()} ${p2(d.getHours())}:${p2(d.getMinutes())}`}
 async function loadVerTime(){let lm=null;
   try{const r=await caches.match(location.href,{ignoreSearch:true})||await caches.match("./index.html");lm=r&&r.headers.get("last-modified")}catch(e){}
@@ -250,6 +250,7 @@ async function loadVerTime(){let lm=null;
 const SLOTS=[{n:"Πρωινό",t:"8:30"},{n:"Σνακ",t:"πρωί"},{n:"Γεύμα 1",t:"11:00"},{n:"Γεύμα 2",t:"16:00"},{n:"Σνακ",t:"απόγευμα"},{n:"Βραδινό",t:"21:00"}];
 const DAYS=["Δευτέρα","Τρίτη","Τετάρτη","Πέμπτη","Παρασκευή","Σάββατο","Κυριακή"];
 const DSH=["Δευ","Τρι","Τετ","Πεμ","Παρ","Σαβ","Κυρ"];
+const byName=(a,b)=>String(a.name??a.n??"").localeCompare(String(b.name??b.n??""),"el",{sensitivity:"base",numeric:true});
 const CATS=["Κρέας & ψάρι","Γαλακτοκομικά & αυγά","Αλλαντικά & τυριά","Φρούτα & λαχανικά","Ψωμί","Ντουλάπι","Ξηροί καρποί","Άλλα"];
 function catChips(cur){return `<div class="field"><span>Κατηγορία</span><div class="cats" id="cats">${CATS.map(c=>`<button type="button" class="chip${c===cur?" sel":""}" data-cat="${esc(c)}">${esc(c)}</button>`).join("")}</div></div>`}
 function bindCats(){const box=byId("cats");box.onclick=e=>{const b=e.target.closest("[data-cat]");if(!b)return;box.querySelectorAll(".chip").forEach(x=>x.classList.toggle("sel",x===b))}}
@@ -626,8 +627,8 @@ const nv=n=>MXn(n);
 
 function pickerHTML(slot,q){
   const ql=q.trim().toLowerCase(),rec=S.pickSub==="rec";
-  const meals=S.lib.meals.filter(m=>!ql||m.name.toLowerCase().includes(ql)).sort((a,b)=>(b.s?.includes(slot)?1:0)-(a.s?.includes(slot)?1:0));
-  const foods=S.lib.foods.filter(f=>!ql||f.name.toLowerCase().includes(ql));
+  const meals=S.lib.meals.filter(m=>!ql||m.name.toLowerCase().includes(ql)).sort((a,b)=>(b.s?.includes(slot)?1:0)-(a.s?.includes(slot)?1:0)||byName(a,b));
+  const foods=S.lib.foods.filter(f=>!ql||f.name.toLowerCase().includes(ql)).sort(byName);
   const mv=m=>{const n=mealNutr(m);return `${MXn(n)}${servOf(m)>1?' <span class="muted">/μερίδα</span>':""}`};
   const fv=f=>`${MX(f.kcal,f.p,f.c??0,f.f??0)} <span class="muted">/${f.u==="g"?"100γρ":esc(f.pn||"τεμ.")}</span>${hasSv(f)?` <span class="muted small">· 1 ${esc(svName(f))} ${r1(+f.sg)}γρ</span>`:""}`;
   const seg=`<div class="seg"><button id="ps-rec" class="${rec?"on":""}">Συνταγές (${meals.length})</button><button id="ps-ing" class="${rec?"":"on"}">Υλικά (${foods.length})</button></div>`;
@@ -789,7 +790,7 @@ function shopHTML(){
     <option value="rest" ${S.shopRange==="rest"?"selected":""}>Από σήμερα ως Κυριακή</option><option value="week" ${S.shopRange==="week"?"selected":""}>Όλη αυτή την εβδομάδα</option><option value="next" ${S.shopRange==="next"?"selected":""}>Την επόμενη εβδομάδα</option></select></label>
     <p class="note">${fmtD(ds[0])} – ${fmtD(ds[ds.length-1])} · από το πρόγραμμα και τις αλλαγές που έχεις ήδη κάνει. Οι ποσότητες είναι ωμό βάρος, όπως στο πρόγραμμά σου.</p>
     <div class="row"><button class="btn sm" id="copyShop">Αντιγραφή λίστας</button><button class="btn sm ghost" id="clearShop">Ξετσέκαρε όλα</button></div></section>`;
-  for(const c of CATS){const g=groups[c];if(!g)continue;g.sort((a,b)=>a.f.name.localeCompare(b.f.name,"el"));
+  for(const c of CATS){const g=groups[c];if(!g)continue;g.sort((a,b)=>byName(a.f,b.f));
     h+=`<section class="card" style="gap:0"><span class="label" style="padding-bottom:4px">${c}</span>${g.map(({f,q})=>`<label class="shop ${done[f.id]?"done":""}"><input type="checkbox" data-sh="${f.id}" ${done[f.id]?"checked":""}><span class="n">${esc(f.name)}</span><span class="q">${fmtQty(f,q)}</span></label>`).join("")}</section>`}
   if(noIng.length)h+=`<p class="note">Χωρίς υλικά (πρόσθεσέ τα στη συνταγή για να μπουν στη λίστα): ${noIng.map(esc).join(", ")}.</p>`;
   return h}
@@ -804,8 +805,8 @@ function bindShop(){
 /* ---------- Τρόφιμα ---------- */
 function renderFoods(){
   const ql=S.foodQ.trim().toLowerCase(),rec=S.foodSub==="rec";
-  const foods=S.lib.foods.filter(f=>!ql||f.name.toLowerCase().includes(ql));
-  const meals=S.lib.meals.filter(m=>!ql||m.name.toLowerCase().includes(ql));
+  const foods=S.lib.foods.filter(f=>!ql||f.name.toLowerCase().includes(ql)).sort(byName);
+  const meals=S.lib.meals.filter(m=>!ql||m.name.toLowerCase().includes(ql)).sort(byName);
   let h=`<div class="seg"><button id="fs-ing" class="${rec?"":"on"}">Υλικά (${S.lib.foods.length})</button><button id="fs-rec" class="${rec?"on":""}">Συνταγές (${S.lib.meals.length})</button></div>
   <input id="fq" placeholder="${rec?"Αναζήτηση συνταγής":"Αναζήτηση υλικού"}" value="${esc(S.foodQ)}" autocomplete="off">`;
   if(!rec)h+=`<section class="card" style="gap:4px"><div class="row between"><h3>Υλικά</h3><div class="row"><button class="btn sm" id="labelScan">Barcode</button><button class="btn sm primary" id="newFood">+ Νέο</button></div></div>
@@ -843,7 +844,7 @@ function editFood(id){
    const d=byId("del");if(d)d.onclick=()=>{byId("delc").innerHTML=`<div class="row"><span class="small">Σίγουρα;</span><button class="btn danger sm" id="dy">Ναι, διαγραφή</button></div>`;
      const used=foodUsage(id);
      byId("delc").innerHTML=`<div class="card" style="gap:8px"><span class="small">${used.length?"Χρησιμοποιείται σε: "+used.map(esc).join(", ")+".":"Δεν χρησιμοποιείται κάπου."}</span>
-       <label class="field"><span>Αντικατάσταση παντού με (προαιρετικό)</span><select id="repl"><option value="">— Καμία, απλώς αφαίρεση —</option>${S.lib.foods.filter(x=>x.id!==id).map(x=>`<option value="${x.id}">${esc(x.name)}</option>`).join("")}</select></label>
+       <label class="field"><span>Αντικατάσταση παντού με (προαιρετικό)</span><select id="repl"><option value="">— Καμία, απλώς αφαίρεση —</option>${S.lib.foods.filter(x=>x.id!==id).sort(byName).map(x=>`<option value="${x.id}">${esc(x.name)}</option>`).join("")}</select></label>
        <p class="note">Φεύγει από το πρόγραμμα, από σήμερα και τις επόμενες μέρες. Συνταγές που έχουν μόνο αυτό το υλικό σβήνονται κι αυτές. Οι περασμένες μέρες κρατάνε τα νούμερά τους.</p>
        <button class="btn danger" id="dy">Διαγραφή</button></div>`;
      byId("dy").onclick=async()=>{byId("dy").disabled=true;await deleteFood(id,byId("repl").value||null);closeSheet();render();toast("Διαγράφηκε")}}})}
@@ -864,7 +865,7 @@ function editMeal(id){
      ${mode==="fixed"?`<span class="label">Τιμές ανά μερίδα</span><div class="form">${[["mk","Θερμίδες",m.kcal],["mp","Πρωτεΐνη",m.p],["mc","Υδατάνθρακες",m.c],["mf","Λιπαρά",m.f]].map(([i,l,v])=>`<label class="field"><span>${l}</span><input id="${i}" type="number" inputmode="decimal" value="${v??0}"></label>`).join("")}</div>`:""}
      <span class="label">${mode==="parts"?"Υλικά (για όλη τη συνταγή)":"Υλικά για τη λίστα ψωνιών (για όλη τη συνταγή)"}</span>
      <div class="opts">${rows.map((pt,i)=>{const f=food(pt.food),sv=hasSv(f)&&puOf(pt)==="sv";return `<div class="pitem"><span>${esc(f?f.name:"?")}</span><input type="number" inputmode="decimal" id="pq-${i}" data-pq="${i}" value="${sv?Math.round(pt.qty/f.sg*100)/100:pt.qty}">${hasSv(f)?`<button class="btn sm" data-pu="${i}" title="Αλλαγή μονάδας">${sv?esc(plur(svName(f),2)):"γρ."}</button>`:`<span class="muted small">${f&&f.u==="g"?"γρ.":esc(f?.pn||"τεμ.")}</span>`}<button class="btn sm danger" data-pr="${i}" aria-label="Αφαίρεση">×</button></div>`}).join("")||'<span class="note">Κανένα υλικό ακόμα.</span>'}</div>
-     <select id="addPart"><option value="">+ Πρόσθεσε υλικό…</option>${S.lib.foods.map(f=>`<option value="${f.id}">${esc(f.name)}</option>`).join("")}</select>
+     <select id="addPart"><option value="">+ Πρόσθεσε υλικό…</option>${[...S.lib.foods].sort(byName).map(f=>`<option value="${f.id}">${esc(f.name)}</option>`).join("")}</select>
      <div class="tot" id="mtot">${servOf(m)>1?"Ανά μερίδα":"Σύνολο"}: ${nv(n)}</div>
      <div class="field"><span>Ταιριάζει για</span><div class="row">${SLOTS.map((s,i)=>`<label class="chip"><input type="checkbox" id="ms-${i}" data-ms="${i}" ${m.s?.includes(i)?"checked":""}> ${s.n} ${s.t}</label>`).join("")}</div></div>
      <div class="row"><button class="btn primary" id="ok">Αποθήκευση</button>${id?'<button class="btn danger" id="del">Διαγραφή</button>':""}</div><div id="delc"></div>`,bind)};
@@ -1185,7 +1186,7 @@ function renderGymEdit(){
       h+=`</div>`});
     h+=`<div class="row"><button class="btn sm" data-sadd="${i}">+ Σετ</button>${e.sets.length?`<button class="btn sm" data-sdel="${i}">− Σετ</button>`:""}</div></section>`});
   h+=`<section class="card"><div class="row"><input id="gxNew" list="gxList" placeholder="Νέα άσκηση" class="grow" autocomplete="off"><button class="btn sm primary" id="gxAdd">+ Άσκηση</button></div>
-    <datalist id="gxList">${known.map(x=>`<option value="${esc(x.n)}">`).join("")}</datalist></section>
+    <datalist id="gxList">${[...known].sort(byName).map(x=>`<option value="${esc(x.n)}">`).join("")}</datalist></section>
     <button class="btn danger sm" id="gDel" style="align-self:flex-start">Διαγραφή προπόνησης</button>`;
   main.innerHTML=h;
   const sv=()=>saveGym(d),ij=a=>a.split(".").map(Number);
