@@ -245,7 +245,7 @@ nav.tabs button.on{color:var(--ink)}
 /* ---------- Αρχικά δεδομένα (από το αρχείο Numbers) ---------- */
 // Έκδοση: ίδιο νούμερο με το C στο sw.js. Η ώρα δεν γράφεται με το χέρι: είναι η ώρα που ανέβηκε το index.html
 // στο GitHub Pages (κεφαλίδα Last-Modified της απάντησης που φυλάει το service worker), σε ώρα της συσκευής.
-const APP_VER={v:"v22",at:""};
+const APP_VER={v:"v23",at:""};
 function fmtDT(d){const p2=n=>String(n).padStart(2,"0");return `${p2(d.getDate())}/${p2(d.getMonth()+1)}/${d.getFullYear()} ${p2(d.getHours())}:${p2(d.getMinutes())}`}
 async function loadVerTime(){let lm=null;
   try{const r=await caches.match(location.href,{ignoreSearch:true})||await caches.match("./index.html");lm=r&&r.headers.get("last-modified")}catch(e){}
@@ -329,7 +329,23 @@ function normPlan(p){if(!p||!Array.isArray(p.days))p=DEFAULT_PLAN;
   return{...p,ver:2,days,_changed:changed}}
 const validItem=it=>it&&(it.type==="custom"||(it.type==="meal"?!!meal(it.ref):!!food(it.ref)));
 function planItems(iso){return (S.plan.days[wd(iso)]||[]).filter(validItem).map(x=>({...x,id:uid()}))}
-function dayItems(iso){if(iso===S.date)return S.day.items;const d=S.docs[iso];return d&&d.edited&&d.items?d.items:planItems(iso)}
+/* Η μέρα ακολουθεί το πρόγραμμα, εκτός από τις θέσεις που άλλαξες στην ίδια τη μέρα (own). Οι περασμένες μέρες μένουν όπως ήταν. */
+const itKey=it=>JSON.stringify([it.type,it.ref||it.name||"",+it.qty||0,it.type==="custom"?[it.kcal,it.p,it.c,it.f]:0]);
+const slotKey=(items,s)=>items.filter(it=>it.slot===s).map(itKey).sort().join("|");
+const sameItems=(a,b)=>SLOTS.every((_,s)=>slotKey(a,s)===slotKey(b,s));
+function ownOf(doc,iso){if(Array.isArray(doc.own))return doc.own;
+  /* παλιές μέρες χωρίς own: δική σου θέση = όσες έχουν κάτι διαφορετικό από το πρόγραμμα */
+  const pl=planItems(iso);return SLOTS.map((_,s)=>s).filter(s=>doc.items.some(it=>it.slot===s)&&slotKey(doc.items,s)!==slotKey(pl,s))}
+function followPlan(doc,iso){const own=ownOf(doc,iso);
+  return{...doc,own,items:[...doc.items.filter(it=>own.includes(it.slot)),...planItems(iso).filter(it=>!own.includes(it.slot))]}}
+/* persist=false: μόνο στη μνήμη (στο άνοιγμα πριν φέρει τα δεδομένα του λογαριασμού, για να μη σκεπάσει νεότερη μέρα από άλλη συσκευή) */
+function syncPlan(persist=true){const today=todayISO();
+  if(S.date>=today){if(!S.dayEdited)S.day.items=planItems(S.date);
+    else{const nd=followPlan({items:S.day.items,own:S.day.own},S.date);if(!Array.isArray(S.day.own)||!sameItems(nd.items,S.day.items)){S.day.items=nd.items;S.day.own=nd.own;if(persist)saveDay(false)}}}
+  if(!persist)return;
+  for(const [d,doc] of Object.entries(S.docs)){if(d===S.date||d<today||!doc||!doc.edited||!Array.isArray(doc.items))continue;
+    const nd=followPlan(doc,d);if(!Array.isArray(doc.own)||!sameItems(nd.items,doc.items)){S.docs[d]=nd;save("day:"+d,nd)}}}
+function dayItems(iso){if(iso===S.date)return S.day.items;const d=S.docs[iso];return d&&d.edited&&d.items?(iso>=todayISO()?followPlan(d,iso).items:d.items):planItems(iso)}
 function dayLogged(iso){if(iso===S.date)return S.dayEdited;const d=S.docs[iso];return !!(d&&d.edited)}
 function isTrain(iso){const d=iso===S.date?S.day:S.docs[iso];if(d&&typeof d.train==="boolean")return d.train;if(gymOn(iso))return true;return !!S.body.train.days[wd(iso)]}
 
@@ -419,8 +435,10 @@ addEventListener("pagehide",flushAll);document.addEventListener("visibilitychang
 addEventListener("online",()=>{pushDirty().then(()=>setSync(ST.db?"Συγχρονισμένο":"Στη συσκευή"))});
 function setSync(t){const el=byId("sync");if(el)el.textContent=t}
 function saveLib(){save("lib",S.lib)} function savePlan(){save("plan",S.plan)} function saveBody(){save("body",S.body)}
-function saveDay(markEdited=true){if(markEdited)S.dayEdited=true;
-  const doc={items:S.day.items,edited:S.dayEdited,train:typeof S.day.train==="boolean"?S.day.train:null};
+function saveDay(markEdited=true){
+  if(markEdited){const pl=planItems(S.date),own=new Set(S.dayEdited?ownOf({items:S.day.items,own:S.day.own},S.date):[]);
+    SLOTS.forEach((_,s)=>{if(slotKey(S.day.items,s)!==slotKey(pl,s))own.add(s)});S.day.own=[...own].sort();S.dayEdited=true}
+  const doc={items:S.day.items,edited:S.dayEdited,train:typeof S.day.train==="boolean"?S.day.train:null,own:S.dayEdited&&Array.isArray(S.day.own)?S.day.own:undefined};
   S.docs[S.date]=doc;save("day:"+S.date,doc)}
 async function loadDocs(dates){const need=dates.filter(d=>!(d in S.docs)&&d!==S.date);
   await Promise.all(need.map(async d=>{S.docs[d]=await load("day:"+d)}))}
@@ -434,7 +452,7 @@ async function loadDay(){
   const d=S.docs[S.date]!==undefined?S.docs[S.date]:await load("day:"+S.date);
   S.docs[S.date]=d;
   const train=d&&typeof d.train==="boolean"?d.train:undefined;
-  if(d&&d.edited&&d.items){S.day={items:clone(d.items),train};S.dayEdited=true}else{S.day={items:planItems(S.date),train};S.dayEdited=false}
+  if(d&&d.edited&&d.items){S.day={items:clone(d.items),train,own:Array.isArray(d.own)?d.own.slice():undefined};S.dayEdited=true;if(S.date>=todayISO())syncPlan(!AUTH.s||ST.db)}else{S.day={items:planItems(S.date),train};S.dayEdited=false}
   render();
   const ws=weekStart(S.date);await loadDocs([0,1,2,3,4,5,6].map(i=>addDays(ws,i)));if(S.tab==="today")render()}
 function migrateLib(lib){
@@ -631,7 +649,7 @@ function sheet(html,bind,top){
   byId("scrim").onclick=e=>{if(e.target.id==="scrim")closeSheet()};bind&&bind()}
 let TG=null;
 function dayTG(){return{kind:"day",get:()=>S.day.items,set:a=>{S.day.items=a},save:()=>saveDay(),tgt:()=>target()}}
-function planTG(d){return{kind:"plan",d,get:()=>S.plan.days[d],set:a=>{S.plan.days[d]=a},save:()=>{savePlan();if(!S.dayEdited&&wd(S.date)===d)S.day.items=planItems(S.date)},tgt:()=>targetFor(!!S.body.train.days[d])}}
+function planTG(d){return{kind:"plan",d,get:()=>S.plan.days[d],set:a=>{S.plan.days[d]=a},save:()=>{savePlan();syncPlan()},tgt:()=>targetFor(!!S.body.train.days[d])}}
 function previewLine(d){const t=TG.tgt(),s=sumItems(TG.get());
   return `Η μέρα: <span class="mx"><span class="k"><i>kcal</i><b>${r0(s.k+d.k)}</b> / ${r0(t.k)}</span><span class="p"><i>P</i><b>${r1(s.p+d.p)}</b> / ${r0(t.p)}</span><span class="c"><i>C</i>${r0(s.c+d.c)}</span><span class="f"><i>F</i>${r0(s.f+d.f)}</span></span>`}
 const nv=n=>MXn(n);
@@ -930,11 +948,11 @@ async function deleteFood(id,replId){
   S.lib.meals=S.lib.meals.filter(m=>!single.has(m.id));
   S.lib.meals.forEach(m=>["parts","ing"].forEach(k=>{if(!Array.isArray(m[k]))return;if(R)m[k].forEach(x=>{if(x.food===id)x.food=R.id});else m[k]=m[k].filter(x=>x.food!==id)}));
   S.lib.foods=S.lib.foods.filter(f=>f.id!==id);saveLib();
-  if(!S.dayEdited)S.day.items=planItems(S.date)}
+  syncPlan()}
 async function deleteMeal(id){
   await applyEverywhere((it,past)=>it.type==="meal"&&it.ref===id?(past?[snapshot(it)]:[]):[it]);
   S.lib.meals=S.lib.meals.filter(m=>m.id!==id);saveLib();
-  if(!S.dayEdited)S.day.items=planItems(S.date)}
+  syncPlan()}
 
 /* ---------- Το σώμα μου ---------- */
 function renderBody(){
