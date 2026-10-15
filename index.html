@@ -295,6 +295,10 @@ const ST={db:false,chains:{},timers:{},pending:{}};
 function lsGet(k){try{const v=localStorage.getItem("diatrofi:"+k);return v?JSON.parse(v):null}catch(e){return null}}
 function lsSet(k,v){try{if(v==null)localStorage.removeItem("diatrofi:"+k);else localStorage.setItem("diatrofi:"+k,JSON.stringify(v))}catch(e){}}
 const clone=o=>o==null?o:JSON.parse(JSON.stringify(o));
+/* Αν ο browser δεν κρατάει localStorage (π.χ. αποκλεισμός cookies), η σύνδεση χάνεται σε κάθε άνοιγμα */
+const LS_OK=(()=>{try{localStorage.setItem("diatrofi:_probe","1");const ok=localStorage.getItem("diatrofi:_probe")==="1";localStorage.removeItem("diatrofi:_probe");return ok}catch(e){return false}})();
+const STANDALONE=matchMedia("(display-mode: standalone)").matches||navigator.standalone===true;
+function keepStorage(){try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist().catch(()=>{})}catch(e){}}
 const AUTH={s:lsGet("auth")};
 function authSave(x){AUTH.s=x;lsSet("auth",x)}
 async function sbAuth(path,body){
@@ -388,11 +392,12 @@ async function boot(){
   const ld=lsGet("day:"+S.date);S.docs[S.date]=ld;
   if(!S.body.since){S.body.since=todayISO();lsSet("body",S.body)}
   await loadDay();
-  if(AUTH.s){await cloudPhase();return}
+  if(AUTH.s){keepStorage();await cloudPhase();return}
   setSync("Μόνο σε αυτή τη συσκευή");
   if(!lsGet("localOnly"))openLogin()}
 function openLogin(){
   sheet(`<h2>Σύνδεση</h2><p class="note">Με λογαριασμό τα δεδομένα σου φυλάγονται στη βάση και είναι ίδια σε κινητό και υπολογιστή. Τα βλέπεις μόνο εσύ.</p>
+    ${!LS_OK?'<p class="note"><b>Αυτός ο browser δεν αποθηκεύει δεδομένα</b> (ιδιωτική περιήγηση ή αποκλεισμένα cookies), γι’ αυτό θα σου ζητάει σύνδεση κάθε φορά.</p>':STANDALONE?"":'<p class="note">Για να μένεις συνδεδεμένος, άνοιγε την εφαρμογή πάντα από το ίδιο σημείο, ιδανικά από το εικονίδιο στην οθόνη Αφετηρίας. Το Safari, το Chrome και το εικονίδιο κρατάνε το καθένα δική του σύνδεση.</p>'}
     <label class="field"><span>Email</span><input id="lgE" type="email" autocomplete="email" inputmode="email" value="${esc(lsGet("lastEmail")||"")}"></label>
     <label class="field"><span>Κωδικός (τουλάχιστον 6 χαρακτήρες)</span><input id="lgP" type="password" autocomplete="current-password"></label>
     <p class="note" id="lgMsg"></p>
@@ -406,9 +411,9 @@ function openLogin(){
       if(/already/i.test(m))return "Υπάρχει ήδη λογαριασμός με αυτό το email. Πάτα «Σύνδεση».";
       return m?"Σφάλμα: "+m:"Δεν υπάρχει σύνδεση στο ίντερνετ."};
     byId("lgIn").onclick=async()=>{const c=creds();if(!c)return;msg("Σύνδεση…");
-      try{const j=await sbAuth("token?grant_type=password",c);authSave(sessFrom(j));lsSet("localOnly",null);closeSheet();await cloudPhase();toast("Συνδέθηκες")}catch(e){msg(errTxt(e))}};
+      try{const j=await sbAuth("token?grant_type=password",c);authSave(sessFrom(j));keepStorage();lsSet("localOnly",null);closeSheet();await cloudPhase();toast("Συνδέθηκες")}catch(e){msg(errTxt(e))}};
     byId("lgUp").onclick=async()=>{const c=creds();if(!c)return;msg("Δημιουργία…");
-      try{const j=await sbAuth("signup",c);if(j.access_token){authSave(sessFrom(j));closeSheet();await cloudPhase();toast("Ο λογαριασμός φτιάχτηκε")}
+      try{const j=await sbAuth("signup",c);if(j.access_token){authSave(sessFrom(j));keepStorage();closeSheet();await cloudPhase();toast("Ο λογαριασμός φτιάχτηκε")}
         else msg("Έτοιμο. Σου στείλαμε email επιβεβαίωσης: πάτα τον σύνδεσμο (αν ανοίξει σελίδα που δεν φορτώνει, δεν πειράζει) και μετά γύρνα εδώ και πάτα «Σύνδεση».")}catch(e){msg(errTxt(e))}};
     byId("lgSkip").onclick=()=>{lsSet("localOnly",true);closeSheet()}})}
 async function backupDownload(){
