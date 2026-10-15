@@ -236,7 +236,7 @@ nav.tabs button.on{color:var(--ink)}
 <script>
 /* ---------- Αρχικά δεδομένα (από το αρχείο Numbers) ---------- */
 // Έκδοση: ίδιο νούμερο με το C στο sw.js· ημερομηνία/ώρα αλλαγής (ώρα Ελλάδας). Ενημερώνεται σε κάθε αλλαγή.
-const APP_VER={v:"v9",at:"15/10/2026 13:05"};
+const APP_VER={v:"v10",at:"15/10/2026 12:45"};
 const SLOTS=[{n:"Πρωινό",t:"8:30"},{n:"Σνακ",t:"πρωί"},{n:"Γεύμα 1",t:"11:00"},{n:"Γεύμα 2",t:"16:00"},{n:"Σνακ",t:"απόγευμα"},{n:"Βραδινό",t:"21:00"}];
 const DAYS=["Δευτέρα","Τρίτη","Τετάρτη","Πέμπτη","Παρασκευή","Σάββατο","Κυριακή"];
 const DSH=["Δευ","Τρι","Τετ","Πεμ","Παρ","Σαβ","Κυρ"];
@@ -672,7 +672,7 @@ function startScan(slot,replaceId){
         msg("Δεν άνοιξε η κάμερα. Επίτρεψε την κάμερα στις ρυθμίσεις, ή γράψε τον αριθμό κάτω από το barcode.")}})()})}
 async function lookupBarcode(code,slot,replaceId){
   const mine=S.lib.foods.find(f=>f.bc===code);
-  if(mine){closeSheet();toast("Το έχεις ήδη: "+mine.name);openAddSheet(slot,replaceId);setTimeout(()=>{const b=document.querySelector(`[data-pf="${mine.id}"]`);if(b)b.click()},50);return}
+  if(mine){closeSheet();toast("Το έχεις ήδη: "+mine.name);if(slot==null){editFood(mine.id);return}openAddSheet(slot,replaceId);setTimeout(()=>{const b=document.querySelector(`[data-pf="${mine.id}"]`);if(b)b.click()},50);return}
   sheet(`<h2>Αναζήτηση ${esc(code)}…</h2><p class="note">Ψάχνω το προϊόν στη βάση Open Food Facts.</p>`);
   let r={found:false,name:"",per100:{},serving:null};
   try{const res=await fetch("https://world.openfoodfacts.org/api/v2/product/"+encodeURIComponent(code)+"?fields=product_name,product_name_el,brands,nutriments,serving_quantity");
@@ -691,12 +691,12 @@ function showLabel(r,slot,replaceId,code){
    ${catChips("Άλλα")}
    ${r.found?"":`<p class="note">Το barcode ${esc(code||"")} δεν υπάρχει στη βάση Open Food Facts. Συμπλήρωσε τις τιμές από την ετικέτα: θα το θυμάμαι την επόμενη φορά.</p>`}<span class="label">Ανά 100 γρ. — έλεγξε ότι ταιριάζουν με την ετικέτα</span>
    <div class="form">${[["kcal","Θερμίδες"],["p","Πρωτεΐνη"],["c","Υδατάνθρακες"],["f","Λιπαρά"]].map(([k,l])=>`<label class="field"><span>${l}</span><input id="l-${k}" type="number" inputmode="decimal" value="${r1(num(p[k]))}"></label>`).join("")}</div>
-   <label class="field"><span>Πόσα γραμμάρια έφαγες;</span><input id="lg" type="number" inputmode="decimal" value="${r.serving||100}"></label>
-   <div class="row"><button class="btn primary" id="addDay">Αποθήκευση & προσθήκη στο ${SLOTS[slot].n}</button><button class="btn" id="saveOnly">Μόνο αποθήκευση στα τρόφιμα</button></div>`,()=>{
+   ${slot==null?`<div class="row"><button class="btn primary" id="saveOnly">Αποθήκευση</button></div>`:`<label class="field"><span>Πόσα γραμμάρια έφαγες;</span><input id="lg" type="number" inputmode="decimal" value="${r.serving||100}"></label>
+   <div class="row"><button class="btn primary" id="addDay">Αποθήκευση & προσθήκη στο ${SLOTS[slot].n}</button><button class="btn" id="saveOnly">Μόνο αποθήκευση στα τρόφιμα</button></div>`}`,()=>{
    byId("x").onclick=closeSheet;bindCats();
    const mk=()=>({id:uid(),name:byId("ln").value.trim()||"Νέο προϊόν",u:"g",kcal:num(byId("l-kcal").value),p:num(byId("l-p").value),c:num(byId("l-c").value),f:num(byId("l-f").value),pn:"",est:false,cat:readCat(),bc:code||null});
    byId("saveOnly").onclick=()=>{const f=mk();S.lib.foods.push(f);saveLib();closeSheet();toast("Αποθηκεύτηκε στα τρόφιμα");render()};
-   byId("addDay").onclick=()=>{const f=mk();S.lib.foods.push(f);saveLib();const g=num(byId("lg").value)||100;
+   if(slot!=null)byId("addDay").onclick=()=>{const f=mk();S.lib.foods.push(f);saveLib();const g=num(byId("lg").value)||100;
      const it={type:"food",ref:f.id,qty:g};placeItems([it],slot,replaceId)}})}
 function placeItems(its,slot,replaceId){
   if(replaceId){TG.set(TG.get().filter(x=>x.id!==replaceId))}
@@ -776,13 +776,13 @@ function renderFoods(){
   byId("fs-ing").onclick=()=>{S.foodSub="ing";S.foodQ="";renderFoods()};byId("fs-rec").onclick=()=>{S.foodSub="rec";S.foodQ="";renderFoods()};
   byId("fq").oninput=e=>{S.foodQ=e.target.value;const pos=e.target.selectionStart;renderFoods();const n=byId("fq");n.focus();n.setSelectionRange(pos,pos)};
   if(rec)byId("newMeal").onclick=()=>editMeal(null);
-  else{byId("newFood").onclick=()=>editFood(null);byId("labelScan").onclick=()=>{TG=dayTG();startScan(5,null)}}
+  else{byId("newFood").onclick=()=>editFood(null);byId("labelScan").onclick=()=>startScan(null,null)}
   main.querySelectorAll("[data-ef]").forEach(b=>b.onclick=()=>editFood(b.dataset.ef));
   main.querySelectorAll("[data-em]").forEach(b=>b.onclick=()=>editMeal(b.dataset.em))}
 
 function editFood(id){
   const f=id?food(id):{id:uid(),name:"",u:"g",kcal:"",p:"",c:"",f:"",pn:"",est:false,cat:"Άλλα"};
-  sheet(`<div class="row between"><h2>${id?"Επεξεργασία":"Νέο"} υλικό</h2><button class="btn ghost" id="x">Κλείσιμο</button></div>
+  sheet(`<div class="row between"><h2>${id?"Επεξεργασία υλικού":"Νέο υλικό"}</h2><button class="btn ghost" id="x">Κλείσιμο</button></div>
    <label class="field"><span>Όνομα</span><input id="fn" value="${esc(f.name)}"></label>
    ${catChips(f.cat||"Άλλα")}
    <div class="form"><label class="field"><span>Οι τιμές είναι</span><select id="fu"><option value="g" ${f.u==="g"?"selected":""}>ανά 100 γρ.</option><option value="pc" ${f.u==="pc"?"selected":""}>ανά τεμάχιο / φέτα / κουταλιά</option></select></label>
@@ -808,7 +808,7 @@ function editMeal(id){
   const draw=()=>{
     const n=mode==="parts"?mealNutr({parts:m.parts,n:m.n}):{k:+m.kcal||0,p:+m.p||0,c:+m.c||0,f:+m.f||0};
     const rows=list();
-    sheet(`<div class="row between"><h2>${id?"Επεξεργασία":"Νέα"} συνταγή</h2><button class="btn ghost" id="x">Κλείσιμο</button></div>
+    sheet(`<div class="row between"><h2>${id?"Επεξεργασία συνταγής":"Νέα συνταγή"}</h2><button class="btn ghost" id="x">Κλείσιμο</button></div>
      <label class="field"><span>Όνομα / περιγραφή</span><input id="mn" value="${esc(m.name)}"></label>
      <label class="field"><span>Βγάζει μερίδες</span><input id="mserv" type="number" inputmode="numeric" min="1" step="1" value="${servOf(m)}"></label>
      <div class="seg"><button id="mpar" class="${mode==="parts"?"on":""}">Από υλικά</button><button id="mfix" class="${mode==="fixed"?"on":""}">Σταθερές τιμές</button></div>
