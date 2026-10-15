@@ -242,7 +242,7 @@ nav.tabs button.on{color:var(--ink)}
 /* ---------- Αρχικά δεδομένα (από το αρχείο Numbers) ---------- */
 // Έκδοση: ίδιο νούμερο με το C στο sw.js. Η ώρα δεν γράφεται με το χέρι: είναι η ώρα που ανέβηκε το index.html
 // στο GitHub Pages (κεφαλίδα Last-Modified της απάντησης που φυλάει το service worker), σε ώρα της συσκευής.
-const APP_VER={v:"v20",at:""};
+const APP_VER={v:"v21",at:""};
 function fmtDT(d){const p2=n=>String(n).padStart(2,"0");return `${p2(d.getDate())}/${p2(d.getMonth()+1)}/${d.getFullYear()} ${p2(d.getHours())}:${p2(d.getMinutes())}`}
 async function loadVerTime(){let lm=null;
   try{const r=await caches.match(location.href,{ignoreSearch:true})||await caches.match("./index.html");lm=r&&r.headers.get("last-modified")}catch(e){}
@@ -250,7 +250,7 @@ async function loadVerTime(){let lm=null;
   let d=lm?new Date(lm):new Date(document.lastModified);
   if(isNaN(d)||(!lm&&Math.abs(Date.now()-d)<60000))return;
   APP_VER.at=fmtDT(d);const el=byId("verAt");if(el)el.textContent=" · "+APP_VER.at}
-const SLOTS=[{n:"Πρωινό",t:"8:30"},{n:"Σνακ",t:"πρωί"},{n:"Μεσημεριανό",t:"11:00"},{n:"Απογευματινό",t:"16:00"},{n:"Σνακ",t:"απόγευμα"},{n:"Βραδινό",t:"21:00"}];
+const SLOTS=[{n:"Πρωινό",t:""},{n:"Σνακ",t:"πρωί"},{n:"Μεσημεριανό",t:""},{n:"Απογευματινό",t:""},{n:"Σνακ",t:"απόγευμα"},{n:"Βραδινό",t:""}];
 const DAYS=["Δευτέρα","Τρίτη","Τετάρτη","Πέμπτη","Παρασκευή","Σάββατο","Κυριακή"];
 const DSH=["Δευ","Τρι","Τετ","Πεμ","Παρ","Σαβ","Κυρ"];
 const byName=(a,b)=>String(a.name??a.n??"").localeCompare(String(b.name??b.n??""),"el",{sensitivity:"base",numeric:true});
@@ -581,7 +581,7 @@ function renderToday(){
   h+=`<section class="card sugg"><h3>Για να κλείσεις τη μέρα</h3>`;
   if(Rk<=50&&Rp<=4){h+=`<p class="note">${Rk<-150?"Έχεις ξεπεράσει τις θερμίδες κατά "+r0(-Rk)+" kcal. Αν θες, μίκρυνε μια μερίδα πατώντας πάνω της.":"Η μέρα είναι στον στόχο."}</p>`;S._sugg=[]}
   else{const sg=suggest(Rk,Rp,defSlot);
-    h+=`<div class="row"><span class="small muted">${Rk<0?"Οι θερμίδες πέρασαν, προτιμώ άπαχη πρωτεΐνη. ":""}Στο</span><select id="suggSlot" style="width:auto;padding:5px 8px">${SLOTS.map((x,i)=>`<option value="${i}" ${i===defSlot?"selected":""}>${x.n} (${x.t})</option>`).join("")}</select></div>`;
+    h+=`<div class="row"><span class="small muted">${Rk<0?"Οι θερμίδες πέρασαν, προτιμώ άπαχη πρωτεΐνη. ":""}Στο</span><select id="suggSlot" style="width:auto;padding:5px 8px">${SLOTS.map((x,i)=>`<option value="${i}" ${i===defSlot?"selected":""}>${x.n}${x.t?" ("+x.t+")":""}</option>`).join("")}</select></div>`;
     if(!sg.length)h+=`<p class="note">Δεν βρήκα συνδυασμό που να ταιριάζει. Πρόσθεσε τρόφιμα στη λίστα σου.</p>`;
     const fq=x=>`${x.f.u==="g"?esc(gramsTxt(x.f,x.q)):x.q+" "+esc(x.f.pn||"τεμ.")} ${esc(x.f.name)}`;
     sg.forEach((o,ix)=>{const what=o.meal?esc(o.meal.name)+(o.s!==1?` <span class="muted">×${o.s}</span>`:"")+(o.extra?` <span class="muted">+</span> ${fq(o.extra)}`:""):o.parts.map(fq).join(" + ");
