@@ -73,6 +73,7 @@ header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background
   padding-block:8px;margin-inline:calc(-1 * max(16px,env(safe-area-inset-left,0px)));padding-inline:max(16px,env(safe-area-inset-left,0px));margin-bottom:4px}
 header.top .wrap{gap:6px}
 .sync{font-size:11.5px;color:var(--muted);text-align:right}
+.gear{border:0;background:transparent;color:inherit;padding:4px;width:32px;height:32px;display:grid;place-items:center} .gear svg{width:22px;height:22px}
 .gauges{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
 .gauge{display:flex;flex-direction:column;align-items:center;gap:3px;min-width:0;text-align:center}
 .gauge .gtext{align-items:center}
@@ -213,7 +214,7 @@ nav.tabs button.on{color:var(--ink)}
 <body>
 <header class="top">
   <div class="wrap">
-    <div class="row between"><h1 id="hTitle">Σήμερα</h1><span class="sync" id="sync">Σύνδεση…</span></div>
+    <div class="row between"><h1 id="hTitle">Σήμερα</h1><div class="row" style="gap:6px;flex-wrap:nowrap"><span class="sync" id="sync">Σύνδεση…</span><button class="gear" id="gear" aria-label="Ρυθμίσεις"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h0a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h0a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button></div></div>
     <div id="gaugeBox"><div class="gauges" id="gauges"></div><div class="macros" id="macros"></div></div>
   </div>
 </header>
@@ -234,7 +235,7 @@ nav.tabs button.on{color:var(--ink)}
 <script>
 /* ---------- Αρχικά δεδομένα (από το αρχείο Numbers) ---------- */
 // Έκδοση: ίδιο νούμερο με το C στο sw.js· ημερομηνία/ώρα αλλαγής (ώρα Ελλάδας). Ενημερώνεται σε κάθε αλλαγή.
-const APP_VER={v:"v4",at:"15/10/2026 10:20"};
+const APP_VER={v:"v4",at:"15/10/2026 10:25"};
 const SLOTS=[{n:"Πρωινό",t:"8:30"},{n:"Σνακ",t:"πρωί"},{n:"Γεύμα 1",t:"11:00"},{n:"Γεύμα 2",t:"16:00"},{n:"Σνακ",t:"απόγευμα"},{n:"Βραδινό",t:"21:00"}];
 const DAYS=["Δευτέρα","Τρίτη","Τετάρτη","Πέμπτη","Παρασκευή","Σάββατο","Κυριακή"];
 const DSH=["Δευ","Τρι","Τετ","Πεμ","Παρ","Σαβ","Κυρ"];
@@ -556,6 +557,17 @@ function renderToday(){
     saveDay();toast("Προστέθηκε στο "+SLOTS[slot].n);render()});
   const rd=byId("resetDay");if(rd)rd.onclick=()=>{S.day.items=planItems(S.date);S.dayEdited=false;saveDay(false);render()}}
 
+/* ---------- Ρυθμίσεις ---------- */
+function openSettings(){
+  sheet(`<div class="row between"><h2>Ρυθμίσεις</h2><button class="btn ghost" id="x">Κλείσιμο</button></div>
+    <h3>Λογαριασμός & αντίγραφα</h3>
+    <p class="note">${AUTH.s?"Συνδεδεμένος ως <b>"+esc(AUTH.s.user&&AUTH.s.user.email||"")+"</b>. Τα δεδομένα συγχρονίζονται με τη βάση.":"Χωρίς λογαριασμό: τα δεδομένα είναι μόνο σε αυτή τη συσκευή."}</p>
+    <div class="row">${AUTH.s?'<button class="btn sm" id="logout">Αποσύνδεση</button>':'<button class="btn sm primary" id="login">Σύνδεση</button>'}<button class="btn sm" id="bkDown">Λήψη αντιγράφου</button><button class="btn sm" id="bkUp">Επαναφορά από αρχείο</button></div>
+    <p class="note muted small">Έκδοση ${APP_VER.v} · ${APP_VER.at}</p>`,()=>{
+    byId("x").onclick=closeSheet;
+    const lo=byId("logout");if(lo)lo.onclick=()=>{flushAll();authSave(null);ST.db=false;setSync("Μόνο σε αυτή τη συσκευή");closeSheet();render();toast("Αποσυνδέθηκες")};
+    const li=byId("login");if(li)li.onclick=openLogin;byId("bkDown").onclick=backupDownload;byId("bkUp").onclick=backupRestore})}
+
 /* ---------- Sheets ---------- */
 function closeSheet(){byId("sheetRoot").innerHTML=""}
 function sheet(html,bind){
@@ -869,10 +881,6 @@ function renderBody(){
     <label class="field"><span>Μέρα προπόνησης: + kcal</span><input id="tex" type="number" inputmode="decimal" step="50" value="${tr.extra}"></label></div>
     <div class="field"><span>Συνήθεις μέρες προπόνησης</span><div class="days7">${DSH.map((d,i)=>`<label class="chip ${tr.days[i]?"on":""}"><input type="checkbox" id="td-${i}" data-td="${i}" ${tr.days[i]?"checked":""}> ${d}</label>`).join("")}</div></div>
     <p class="note">${S.body.targetMode==="body"?"Τώρα χρησιμοποιείται ο στόχος από τα στοιχεία σου.":"Τώρα χρησιμοποιείται ο χειροκίνητος στόχος."} Στις μέρες προπόνησης ο στόχος ανεβαίνει κατά ${r0(+tr.extra||0)} kcal (κυρίως υδατάνθρακες). Αλλάζεις μια συγκεκριμένη μέρα από το κουμπί στο «Σήμερα».</p></section>`;
-  h+=`<section class="card"><h3>Λογαριασμός & αντίγραφα</h3>
-    <p class="note">${AUTH.s?"Συνδεδεμένος ως <b>"+esc(AUTH.s.user&&AUTH.s.user.email||"")+"</b>. Τα δεδομένα συγχρονίζονται με τη βάση.":"Χωρίς λογαριασμό: τα δεδομένα είναι μόνο σε αυτή τη συσκευή."}</p>
-    <div class="row">${AUTH.s?'<button class="btn sm" id="logout">Αποσύνδεση</button>':'<button class="btn sm primary" id="login">Σύνδεση</button>'}<button class="btn sm" id="bkDown">Λήψη αντιγράφου</button><button class="btn sm" id="bkUp">Επαναφορά από αρχείο</button></div>
-    <p class="note muted small">Έκδοση ${APP_VER.v} · ${APP_VER.at}</p></section>`;
   h+=`<section class="card"><h3>Πορεία διατροφής</h3><div id="nutriHist"><p class="note">Φόρτωση…</p></div></section>`;
   const hist=S.body.history;
   h+=`<section class="card"><h3>Πορεία σώματος</h3>`;
@@ -888,8 +896,6 @@ function renderBody(){
   byId("fat2").onchange=e=>{S.body.fatPct=Math.min(45,Math.max(15,num(e.target.value)||27));saveBody();render()};
   byId("tex").onchange=e=>{S.body.train.extra=num(e.target.value);saveBody();render()};
   main.querySelectorAll("[data-td]").forEach(c=>c.onchange=()=>{S.body.train.days[+c.dataset.td]=c.checked;saveBody();render()});
-  {const lo=byId("logout");if(lo)lo.onclick=()=>{flushAll();authSave(null);ST.db=false;setSync("Μόνο σε αυτή τη συσκευή");render();toast("Αποσυνδέθηκες")};
-   const li=byId("login");if(li)li.onclick=openLogin;byId("bkDown").onclick=backupDownload;byId("bkUp").onclick=backupRestore}
   byId("logMeas").onclick=()=>{const c2=bodyCalc();if(!(+pr.weight)){toast("Βάλε πρώτα βάρος");return}
     const e={date:todayISO(),weight:+pr.weight||null,waist:+pr.waist||null,neck:+pr.neck||null,chest:+pr.chest||null,arm:+pr.arm||null,thigh:+pr.thigh||null,bf:c2.bf?r1(c2.bf):null};
     const ix=hist.findIndex(x=>x.date===e.date);if(ix>=0)hist[ix]=e;else hist.push(e);hist.sort((a,b)=>a.date<b.date?-1:1);saveBody();render();toast("Η μέτρηση καταγράφηκε")};
@@ -1134,6 +1140,7 @@ function renderGymEdit(){
 /* ---------- misc ---------- */
 let tt;function toast(m){clearTimeout(tt);let el=byId("toast");if(!el){el=document.createElement("div");el.id="toast";el.className="toast";el.setAttribute("role","status");document.body.appendChild(el)}el.textContent=m;el.hidden=false;tt=setTimeout(()=>el.hidden=true,1800)}
 document.querySelectorAll("nav.tabs button").forEach(b=>b.onclick=()=>{if(b.dataset.tab==="gym"&&S.tab==="gym")S.gymOpen=null;S.tab=b.dataset.tab;lsSet("tab",S.tab);closeSheet();window.scrollTo(0,0);render()});
+byId("gear").onclick=openSettings;
 boot();
 if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{});
 </script>
