@@ -233,6 +233,8 @@ nav.tabs button.on{color:var(--ink)}
 
 <script>
 /* ---------- Αρχικά δεδομένα (από το αρχείο Numbers) ---------- */
+// Έκδοση: ίδιο νούμερο με το C στο sw.js· ημερομηνία/ώρα αλλαγής (ώρα Ελλάδας). Ενημερώνεται σε κάθε αλλαγή.
+const APP_VER={v:"v4",at:"15/10/2026 10:20"};
 const SLOTS=[{n:"Πρωινό",t:"8:30"},{n:"Σνακ",t:"πρωί"},{n:"Γεύμα 1",t:"11:00"},{n:"Γεύμα 2",t:"16:00"},{n:"Σνακ",t:"απόγευμα"},{n:"Βραδινό",t:"21:00"}];
 const DAYS=["Δευτέρα","Τρίτη","Τετάρτη","Πέμπτη","Παρασκευή","Σάββατο","Κυριακή"];
 const DSH=["Δευ","Τρι","Τετ","Πεμ","Παρ","Σαβ","Κυρ"];
@@ -869,7 +871,8 @@ function renderBody(){
     <p class="note">${S.body.targetMode==="body"?"Τώρα χρησιμοποιείται ο στόχος από τα στοιχεία σου.":"Τώρα χρησιμοποιείται ο χειροκίνητος στόχος."} Στις μέρες προπόνησης ο στόχος ανεβαίνει κατά ${r0(+tr.extra||0)} kcal (κυρίως υδατάνθρακες). Αλλάζεις μια συγκεκριμένη μέρα από το κουμπί στο «Σήμερα».</p></section>`;
   h+=`<section class="card"><h3>Λογαριασμός & αντίγραφα</h3>
     <p class="note">${AUTH.s?"Συνδεδεμένος ως <b>"+esc(AUTH.s.user&&AUTH.s.user.email||"")+"</b>. Τα δεδομένα συγχρονίζονται με τη βάση.":"Χωρίς λογαριασμό: τα δεδομένα είναι μόνο σε αυτή τη συσκευή."}</p>
-    <div class="row">${AUTH.s?'<button class="btn sm" id="logout">Αποσύνδεση</button>':'<button class="btn sm primary" id="login">Σύνδεση</button>'}<button class="btn sm" id="bkDown">Λήψη αντιγράφου</button><button class="btn sm" id="bkUp">Επαναφορά από αρχείο</button></div></section>`;
+    <div class="row">${AUTH.s?'<button class="btn sm" id="logout">Αποσύνδεση</button>':'<button class="btn sm primary" id="login">Σύνδεση</button>'}<button class="btn sm" id="bkDown">Λήψη αντιγράφου</button><button class="btn sm" id="bkUp">Επαναφορά από αρχείο</button></div>
+    <p class="note muted small">Έκδοση ${APP_VER.v} · ${APP_VER.at}</p></section>`;
   h+=`<section class="card"><h3>Πορεία διατροφής</h3><div id="nutriHist"><p class="note">Φόρτωση…</p></div></section>`;
   const hist=S.body.history;
   h+=`<section class="card"><h3>Πορεία σώματος</h3>`;
