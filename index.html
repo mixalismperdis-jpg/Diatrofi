@@ -237,7 +237,7 @@ nav.tabs button.on{color:var(--ink)}
 /* ---------- Αρχικά δεδομένα (από το αρχείο Numbers) ---------- */
 // Έκδοση: ίδιο νούμερο με το C στο sw.js. Η ώρα βγαίνει μόνη της από το πότε ανέβηκε το αρχείο (Last-Modified του GitHub Pages),
 // σε ώρα της συσκευής· το "at" μένει μόνο ως εφεδρεία όταν ο server δεν τη δίνει.
-const APP_VER={v:"v11",at:"15/10/2026 12:46"};
+const APP_VER={v:"v12",at:"15/10/2026 12:50"};
 {const lm=new Date(document.lastModified),p2=n=>String(n).padStart(2,"0");
  if(!isNaN(lm)&&Math.abs(Date.now()-lm)>60000)APP_VER.at=`${p2(lm.getDate())}/${p2(lm.getMonth()+1)}/${lm.getFullYear()} ${p2(lm.getHours())}:${p2(lm.getMinutes())}`}
 const SLOTS=[{n:"Πρωινό",t:"8:30"},{n:"Σνακ",t:"πρωί"},{n:"Γεύμα 1",t:"11:00"},{n:"Γεύμα 2",t:"16:00"},{n:"Σνακ",t:"απόγευμα"},{n:"Βραδινό",t:"21:00"}];
@@ -1166,7 +1166,12 @@ let tt;function toast(m){clearTimeout(tt);let el=byId("toast");if(!el){el=docume
 document.querySelectorAll("nav.tabs button").forEach(b=>b.onclick=()=>{if(b.dataset.tab==="gym"&&S.tab==="gym")S.gymOpen=null;S.tab=b.dataset.tab;closeSheet();window.scrollTo(0,0);render()});
 byId("gear").onclick=openSettings;
 boot();
-if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{});
+if("serviceWorker" in navigator){
+  // Νέα έκδοση: όταν αναλάβει νέο service worker, ξαναφορτώνει μία φορά· ελέγχει για ενημέρωση κάθε φορά που ανοίγει η εφαρμογή
+  const hadCtl=!!navigator.serviceWorker.controller;let reloaded=false;
+  navigator.serviceWorker.addEventListener("controllerchange",()=>{if(hadCtl&&!reloaded){reloaded=true;location.reload()}});
+  navigator.serviceWorker.register("sw.js",{updateViaCache:"none"}).then(reg=>{
+    document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")reg.update().catch(()=>{})})}).catch(()=>{})}
 </script>
 </body>
 </html>
