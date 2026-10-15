@@ -174,9 +174,12 @@ nav.tabs button svg{width:20px;height:20px}
 nav.tabs button.on{color:var(--ink)}
 
 /* sheet */
-.scrim{position:fixed;inset:0;background:rgba(10,10,9,.45);z-index:20;display:flex;align-items:flex-end;justify-content:center}
+.scrim{position:fixed;left:0;right:0;top:var(--vvt,0px);height:var(--vvh,100dvh);background:rgba(10,10,9,.45);z-index:20;display:flex;align-items:flex-end;justify-content:center}
 .sheet{background:var(--bg);width:100%;max-width:720px;max-height:88%;overflow:auto;border-radius:16px 16px 0 0;border-top:1px solid var(--line);
   padding:16px max(16px,env(safe-area-inset-right,0px)) calc(20px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));display:flex;flex-direction:column;gap:10px}
+.scrim.top{align-items:flex-start}
+.scrim.top .sheet{border-radius:0 0 16px 16px;border-top:0;border-bottom:1px solid var(--line);max-height:100%;padding-top:calc(12px + env(safe-area-inset-top,0px));padding-bottom:16px}
+.sheet .sq{position:sticky;top:-16px;z-index:1;background:var(--bg);padding-block:4px}
 .sheet .preview{position:sticky;top:-16px;background:var(--bg);padding-block:6px;z-index:1;font-size:13px}
 .opt{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;padding:9px 10px;border:1px solid var(--line);border-radius:10px;background:var(--surface);text-align:left;width:100%}
 .opt:hover{border-color:var(--muted)}
@@ -242,7 +245,7 @@ nav.tabs button.on{color:var(--ink)}
 /* ---------- Αρχικά δεδομένα (από το αρχείο Numbers) ---------- */
 // Έκδοση: ίδιο νούμερο με το C στο sw.js. Η ώρα δεν γράφεται με το χέρι: είναι η ώρα που ανέβηκε το index.html
 // στο GitHub Pages (κεφαλίδα Last-Modified της απάντησης που φυλάει το service worker), σε ώρα της συσκευής.
-const APP_VER={v:"v21",at:""};
+const APP_VER={v:"v22",at:""};
 function fmtDT(d){const p2=n=>String(n).padStart(2,"0");return `${p2(d.getDate())}/${p2(d.getMonth()+1)}/${d.getFullYear()} ${p2(d.getHours())}:${p2(d.getMinutes())}`}
 async function loadVerTime(){let lm=null;
   try{const r=await caches.match(location.href,{ignoreSearch:true})||await caches.match("./index.html");lm=r&&r.headers.get("last-modified")}catch(e){}
@@ -615,10 +618,16 @@ function openSettings(){
     const lo=byId("logout");if(lo)lo.onclick=()=>{flushAll();authSave(null);ST.db=false;setSync("Μόνο σε αυτή τη συσκευή");closeSheet();render();toast("Αποσυνδέθηκες")};
     const li=byId("login");if(li)li.onclick=openLogin;byId("bkDown").onclick=backupDownload;byId("bkUp").onclick=backupRestore})}
 
+/* ---------- Πληκτρολόγιο: μέγεθος ορατής περιοχής ---------- */
+function vvSync(){const v=window.visualViewport;if(!v)return;const r=document.documentElement.style;r.setProperty("--vvh",v.height+"px");r.setProperty("--vvt",v.offsetTop+"px")}
+if(window.visualViewport){visualViewport.addEventListener("resize",vvSync);visualViewport.addEventListener("scroll",vvSync);vvSync()}
+// φέρνει το πεδίο αναζήτησης ακριβώς κάτω από την κεφαλίδα ώστε τα αποτελέσματα να φαίνονται πάνω από το πληκτρολόγιο
+function pinTop(el){const h=document.querySelector("header.top")?.offsetHeight||0;scrollTo(0,Math.max(0,el.getBoundingClientRect().top+scrollY-h-8))}
+
 /* ---------- Sheets ---------- */
 function closeSheet(){byId("sheetRoot").innerHTML=""}
-function sheet(html,bind){
-  byId("sheetRoot").innerHTML=`<div class="scrim" id="scrim"><div class="sheet" role="dialog" aria-modal="true">${html}</div></div>`;
+function sheet(html,bind,top){
+  byId("sheetRoot").innerHTML=`<div class="scrim${top?" top":""}" id="scrim"><div class="sheet" role="dialog" aria-modal="true">${html}</div></div>`;
   byId("scrim").onclick=e=>{if(e.target.id==="scrim")closeSheet()};bind&&bind()}
 let TG=null;
 function dayTG(){return{kind:"day",get:()=>S.day.items,set:a=>{S.day.items=a},save:()=>saveDay(),tgt:()=>target()}}
@@ -655,9 +664,9 @@ function openAddSheet(slot,replaceId){
       byId("ok").onclick=()=>{const v=get();if(v>0)commit({type:"food",ref:f.id,qty:v})}})};
   sheet(`<div class="row between"><h2>${old?"Αλλαγή":"Προσθήκη"} · ${TG.kind==="plan"?DAYS[TG.d]+" · ":""}${SLOTS[slot].n}</h2><button class="btn ghost" id="x">Κλείσιμο</button></div>
     <button class="btn" id="scanBtn">Σάρωση barcode</button>
-    <input id="q" placeholder="Αναζήτηση (π.χ. τόνος, αυγό)" autocomplete="off"><div id="pick" style="display:flex;flex-direction:column;gap:8px"></div>`,()=>{
-    byId("x").onclick=closeSheet;byId("q").oninput=e=>{q=e.target.value;draw()};draw();
-    byId("scanBtn").onclick=()=>startScan(slot,replaceId)})}
+    <div class="sq"><input id="q" placeholder="Αναζήτηση (π.χ. τόνος, αυγό)" autocomplete="off"></div><div id="pick" style="display:flex;flex-direction:column;gap:8px"></div>`,()=>{
+    byId("x").onclick=closeSheet;byId("q").oninput=e=>{q=e.target.value;draw();byId("q").closest(".sheet").scrollTop=0};draw();
+    byId("scanBtn").onclick=()=>startScan(slot,replaceId)},true)}
 
 function ingLines(m,v){const k=v/servOf(m);return ingOf(m).map(x=>{const f=food(x.food);if(!f)return"";const q=x.qty*k;
   return `<div><span>${esc(f.name)}</span><b>${f.u==="g"?esc(gramsTxt(f,q)):esc(nEl(q)+" "+plur(f.pn||"τεμ.",q))}</b></div>`}).join("")}
@@ -824,7 +833,8 @@ function renderFoods(){
    <p class="note">Φτιάξε συνταγή από τα υλικά σου· οι τιμές βγαίνουν μόνες τους. Στο πρόγραμμα διαλέγεις συνταγή ή μεμονωμένο υλικό.</p></section>`;
   main.innerHTML=h;
   byId("fs-ing").onclick=()=>{S.foodSub="ing";S.foodQ="";renderFoods()};byId("fs-rec").onclick=()=>{S.foodSub="rec";S.foodQ="";renderFoods()};
-  byId("fq").oninput=e=>{S.foodQ=e.target.value;const pos=e.target.selectionStart;renderFoods();const n=byId("fq");n.focus();n.setSelectionRange(pos,pos)};
+  byId("fq").oninput=e=>{S.foodQ=e.target.value;const pos=e.target.selectionStart;renderFoods();const n=byId("fq");n.focus({preventScroll:true});n.setSelectionRange(pos,pos);pinTop(n)};
+  byId("fq").onfocus=e=>{const n=e.target;pinTop(n);setTimeout(()=>pinTop(n),350)};
   if(rec)byId("newMeal").onclick=()=>editMeal(null);
   else{byId("newFood").onclick=()=>editFood(null);byId("labelScan").onclick=()=>startScan(null,null)}
   main.querySelectorAll("[data-ef]").forEach(b=>b.onclick=()=>editFood(b.dataset.ef));
