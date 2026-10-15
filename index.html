@@ -975,28 +975,30 @@ function parseSpec(s){let w=null,sec=null;s=s.replace(/(\d),(\d)/g,"$1.$2");
   s=s.replace(/(\d+(?:\.\d+)?)\s*(?:λεπτ[άαό]?|min)\S*/i,(_,v)=>{sec=Math.round(v*60);return " "});
   s=s.replace(/(\d+)\s*(?:δευτ\S*|sec\S*|s(?=\s|$)|''|"|″)/i,(_,v)=>{sec=+v;return " "});
   return{w,sec,toks:(s.match(/\d+(?:\.\d+)?|max/gi)||[]).map(t=>/max/i.test(t)?"max":Math.round(+t))}}
-function parseNotes(txt){
+function parseNotes(txt){ // μία ή περισσότερες προπονήσεις· νέα προπόνηση σε κάθε γραμμή με μέρα της εβδομάδας
   const lines=txt.split(/\r?\n/).map(l=>l.trim()).filter(Boolean),hasNum=l=>/\d|max/i.test(l);
-  let title="",dow=null,i=0;
-  if(lines.length&&!hasNum(lines[0])){const up=deacc(lines[0]).toUpperCase(),di=GDAYS.findIndex(x=>up.includes(x));
-    if(di>=0||(lines[1]&&!hasNum(lines[1]))){dow=di>=0?di:null;i=1;
-      title=lines[0].replace(/^[^\p{L}\p{N}]+/u,"");if(di>=0)title=deacc(title).toUpperCase().startsWith(GDAYS[di])?title.slice(GDAYS[di].length):title;
-      title=title.replace(/^[\s–—\-:·|]+/,"").trim()}}
-  const ex=[];let cur=null;
-  for(;i<lines.length;i++){const l=lines[i];
-    const sm=l.match(/^\d+\s*\S{0,2}\s*σετ\s*[:.\-]?\s*(.*)$/i);
-    if(sm||(!/^[^\d]*\p{L}{2}/u.test(l)&&hasNum(l)&&cur)){ // γραμμή σετ
-      if(!cur)continue;const sp=parseSpec(sm?sm[1]:l),r=sp.toks.length?sp.toks[sp.toks.length-1]:null;
-      cur.sets.push({w:sp.w,r:sp.sec!=null&&sp.toks.length===0?null:r,s:sp.sec});continue}
-    if(!hasNum(l)){cur={n:l.replace(/[:\-–]+$/,"").trim(),sets:[]};ex.push(cur);continue}
-    const at=l.search(/\d|max/i),name=l.slice(0,at).replace(/[:\-–(]+\s*$/,"").trim(),sp=parseSpec(l.slice(at));
+  const SET=/^\d+\s*\S{0,2}\s*σετ\s*[:.\-]?\s*(.*)$/i,noPar=s=>s.replace(/\([^)]*\)/g," ");
+  const dayOf=l=>{const up=deacc(l).toUpperCase();return GDAYS.findIndex(x=>up.includes(x))};
+  const isTitle=(l,i)=>!hasNum(l)&&(dayOf(l)>=0||(i===0&&lines[1]&&!hasNum(lines[1])&&!SET.test(lines[2]||"")));
+  const outs=[];let W=null,cur=null;
+  const start=l=>{const di=dayOf(l);let t=l.replace(/^[^\p{L}\p{N}]+/u,"");
+    if(di>=0&&deacc(t).toUpperCase().startsWith(GDAYS[di]))t=t.slice(GDAYS[di].length);
+    W={title:t.replace(/^[\s–—\-:·|]+/,"").trim(),dow:di>=0?di:null,ex:[]};outs.push(W);cur=null};
+  lines.forEach((l,i)=>{
+    if(isTitle(l,i)){start(l);return}
+    if(!W)start("");
+    const sm=l.match(SET);
+    if(sm||(cur&&hasNum(l)&&!SET.test(lines[i+1]||"")&&!/^[^\d]*\p{L}{2}/u.test(l))){ // γραμμή σετ
+      if(!cur)return;const sp=parseSpec(noPar(sm?sm[1]:l)),r=sp.toks.length?sp.toks[sp.toks.length-1]:null;
+      cur.sets.push({w:sp.w,r:sp.sec!=null&&!sp.toks.length?null:r,s:sp.sec});return}
+    if(!hasNum(l)||SET.test(lines[i+1]||"")){cur={n:l.replace(/[:\-–]+$/,"").trim(),sets:[]};W.ex.push(cur);return} // όνομα άσκησης
+    const at=l.search(/\d|max/i),name=l.slice(0,at).replace(/[:\-–(]+\s*$/,"").trim(),sp=parseSpec(noPar(l.slice(at)));
     let n=1,st;
     if(sp.sec!=null){n=typeof sp.toks[0]==="number"?sp.toks[0]:1;st={w:sp.w,r:null,s:sp.sec}}
     else if(sp.toks.length>=2){n=typeof sp.toks[0]==="number"?sp.toks[0]:1;st={w:sp.w,r:sp.toks[1],s:null};if(sp.w==null&&typeof sp.toks[2]==="number")st.w=sp.toks[2]}
     else st={w:sp.w,r:sp.toks[0]??null,s:null};
-    n=Math.min(Math.max(1,n),10);cur={n:name||"Άσκηση",sets:Array.from({length:n},()=>({...st}))};ex.push(cur)}
-  const out=ex.filter(e=>e.sets.length).map(e=>({n:e.n,m:e.sets.some(s=>s.s!=null)?"t":e.sets.every(s=>s.w==null)?"bw":"w",sets:e.sets}));
-  return{title,dow,ex:out}}
+    n=Math.min(Math.max(1,n),10);cur={n:name||"Άσκηση",sets:Array.from({length:n},()=>({...st}))};W.ex.push(cur)});
+  return outs.map(w=>({...w,ex:w.ex.filter(e=>e.sets.length).map(e=>({n:e.n,m:e.sets.some(s=>s.s!=null)?"t":e.sets.every(s=>s.w==null)?"bw":"w",sets:e.sets}))})).filter(w=>w.ex.length)}
 
 /* προβολές */
 function gymStatsHTML(){const t=todayISO(),ws=weekStart(t),ds=gymDates();
@@ -1068,18 +1070,21 @@ function openNewGym(){
     byId("ngE").onclick=()=>go(null)})}
 
 function openImport(){
-  sheet(`<h2>Από σημειώσεις</h2><p class="note">Επικόλλησε μία προπόνηση όπως τη γράφεις στο κινητό (π.χ. «1° σετ 260kg x 12», «Cable Crunch 70kg x 3 x 15», «Plank 3 x 45 δευτερόλεπτα»).</p>
-    <textarea id="imT" rows="9" style="width:100%;font:inherit;font-size:14px;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:inherit"></textarea>
-    <label class="field"><span>Ημερομηνία</span><input type="date" id="imD" value="${todayISO()}"></label>
+  sheet(`<h2>Επικόλληση σημειώσεων</h2><p class="note">Επικόλλησε μία ή περισσότερες προπονήσεις όπως τις γράφεις στο κινητό (π.χ. «🟠ΠΕΜΠΤΗ – LEGS & ABS», «1° σετ 260kg x 12», «Cable Crunch 70kg x 3 x 15», «Plank 3 x 45 δευτερόλεπτα»).</p>
+    <textarea id="imT" rows="8" style="flex:none;min-height:150px;width:100%;font:inherit;font-size:14px;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:inherit"></textarea>
+    <label class="field"><span>Ημερομηνία (ή εβδομάδα που τελειώνει)</span><input type="date" id="imD" value="${todayISO()}"></label>
     <div id="imP"></div><div class="row"><button class="btn primary" id="imS" disabled>Αποθήκευση</button><button class="btn" id="imC">Άκυρο</button></div>`,()=>{
-    let res=null,dTouched=false;
-    const upd=()=>{res=parseNotes(byId("imT").value);
-      if(!dTouched&&res.dow!=null){let d=todayISO();while(wd(d)!==res.dow)d=addDays(d,-1);byId("imD").value=d}
-      const d=byId("imD").value;
-      byId("imP").innerHTML=res.ex.length?`<div class="card" style="gap:4px"><b>${esc(res.title||"Προπόνηση")}</b>${res.ex.map(e=>`<div class="small"><b>${esc(e.n)}</b> <span class="muted">${esc(setsTxt(e))}</span></div>`).join("")}</div>${gymOn(d)?`<p class="note" style="color:var(--warn)">Υπάρχει ήδη προπόνηση στις ${fmtD(d)}: θα αντικατασταθεί.</p>`:""}`:"";
-      byId("imS").disabled=!res.ex.length};
-    byId("imT").oninput=upd;byId("imD").onchange=()=>{dTouched=true;upd()};byId("imC").onclick=closeSheet;
-    byId("imS").onclick=()=>{const d=byId("imD").value||todayISO();S.gym[d]={title:res.title,ex:res.ex};saveGym(d);closeSheet();S.gymOpen=d;window.scrollTo(0,0);render();toast("Η προπόνηση αποθηκεύτηκε")}})}
+    let res=[];
+    const dateOf=w=>{let d=byId("imD").value||todayISO();if(w.dow!=null)while(wd(d)!==w.dow)d=addDays(d,-1);return d};
+    const upd=()=>{res=parseNotes(byId("imT").value);res.forEach(w=>w.d=dateOf(w));
+      const dup=res.filter((w,i)=>res.findIndex(x=>x.d===w.d)!==i).length;
+      byId("imP").innerHTML=res.map(w=>`<div class="card" style="gap:4px"><div class="row between"><b>${DSH[wd(w.d)]} ${fmtD(w.d)}${w.title?" · "+esc(w.title):""}</b>${gymOn(w.d)?`<span class="small" style="color:var(--warn)">αντικαθιστά την υπάρχουσα</span>`:""}</div>
+        ${w.ex.map(e=>`<div class="small"><b>${esc(e.n)}</b> <span class="muted">${esc(setsTxt(e))}</span></div>`).join("")}</div>`).join("")
+        +(res.length>1?`<p class="note">Κάθε προπόνηση μπαίνει στην πιο πρόσφατη μέρα με αυτό το όνομα, μέχρι την ημερομηνία που διάλεξες.${dup?" Δύο προπονήσεις πέφτουν στην ίδια μέρα: θα κρατηθεί η τελευταία.":""}</p>`:"");
+      byId("imS").disabled=!res.length;byId("imS").textContent=res.length>1?"Αποθήκευση ("+res.length+")":"Αποθήκευση"};
+    byId("imT").oninput=upd;byId("imD").onchange=upd;byId("imC").onclick=closeSheet;
+    byId("imS").onclick=()=>{res.forEach(w=>{S.gym[w.d]={title:w.title,ex:w.ex};saveGym(w.d)});closeSheet();
+      S.gymOpen=res.length===1?res[0].d:null;S.gymSub="list";window.scrollTo(0,0);render();toast(res.length===1?"Η προπόνηση αποθηκεύτηκε":"Αποθηκεύτηκαν "+res.length+" προπονήσεις")}})}
 
 function renderGymEdit(){
   const d=S.gymOpen,g=S.gym[d];
