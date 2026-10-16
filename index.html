@@ -65,6 +65,7 @@ input[type=checkbox]{width:auto;accent-color:var(--prot)}
 .note{font-size:12.5px;color:var(--muted);line-height:1.5;margin:0}
 .chip{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;border-radius:99px;padding:5px 10px;background:var(--surface-2);color:var(--muted);border:0}
 .chip.on{background:var(--prot-soft);color:var(--prot)}
+.svbox{display:flex;flex-direction:column;gap:8px;border-top:1px solid var(--line);padding-top:10px}.svt{align-self:flex-start;font-size:13px;padding:7px 12px}.svt.on{background:var(--accent);color:var(--accent-ink)}
 .cats{display:flex;flex-wrap:wrap;gap:6px}.chip.sel{background:var(--accent);color:var(--accent-ink)}
 .seg{display:inline-flex;background:var(--surface-2);border-radius:10px;padding:3px;gap:2px;align-self:flex-start}
 .seg button{border:0;background:transparent;padding:5px 12px;font-size:13px;font-weight:700;border-radius:8px;color:var(--muted)}
@@ -246,7 +247,7 @@ nav.tabs button.on{color:var(--ink)}
 /* ---------- Αρχικά δεδομένα (από το αρχείο Numbers) ---------- */
 // Έκδοση: ίδιο νούμερο με το C στο sw.js. Η ώρα δεν γράφεται με το χέρι: είναι η ώρα που ανέβηκε το index.html
 // στο GitHub Pages (κεφαλίδα Last-Modified της απάντησης που φυλάει το service worker), σε ώρα της συσκευής.
-const APP_VER={v:"v26",at:""};
+const APP_VER={v:"v27",at:""};
 // Χωρίς ζουμ (pinch / double-tap), και στο iOS που αγνοεί το user-scalable=no
 (()=>{const no=e=>e.preventDefault();
   ["gesturestart","gesturechange","gestureend"].forEach(t=>document.addEventListener(t,no,{passive:false}));
@@ -329,6 +330,12 @@ function bindQty(f,upd){const sv=()=>inSvOf(f),st=()=>sv()?.5:5,el=byId("qty");
   el.oninput=ch;
   document.querySelectorAll("[data-qu]").forEach(b=>b.onclick=()=>{const q=get();QU=b.dataset.qu;el.value=sv()?toSv(f,q):toG(f,q);el.step=st();document.querySelectorAll("[data-qu]").forEach(x=>x.classList.toggle("on",x===b));ch()});
   ch();return get}
+// Κουμπί «Μερίδα» στο κάτω μέρος της φόρμας τροφίμου: όταν είναι ανοιχτό ζητάει όνομα + γραμμάρια
+function svToggleHTML(pre,on,sn,sg,lock){return `<div class="svbox"><label class="chip svt${on?" on":""}" id="${pre}-svt"><input type="checkbox" id="${pre}-svon" ${on?"checked":""} ${lock?"disabled":""}> Μερίδα (φέτα, τεμάχιο, κουταλιά…)</label>
+  <div id="${pre}-svf" ${on?"":"hidden"}><p class="note">Για να βάζεις ποσότητα σε μερίδες αντί για γραμμάρια. Οι τιμές μένουν ανά 100 γρ.</p>
+  <div class="form"><label class="field"><span>Λέγεται</span><input id="${pre}-sn" value="${esc(sn||"")}" placeholder="φέτα"></label><label class="field"><span>1 μερίδα = γρ.</span><input id="${pre}-sg" type="number" inputmode="decimal" value="${sg||""}" placeholder="25"></label></div></div></div>`}
+function bindSvToggle(pre,onCh){const cb=byId(pre+"-svon");cb.onchange=()=>{byId(pre+"-svf").hidden=!cb.checked;byId(pre+"-svt").classList.toggle("on",cb.checked);onCh&&onCh()}}
+const readSv=pre=>byId(pre+"-svon").checked?{sn:byId(pre+"-sn").value.trim(),sg:num(byId(pre+"-sg").value)}:{sn:"",sg:0};
 const servOf=m=>Math.max(1,+m.n||1);
 function mealNutr(m){
   if(m.parts&&m.parts.length){const t=Z();for(const pt of m.parts){const f=food(pt.food);if(f)add(t,foodNutr(f,pt.qty),1/servOf(m))}return t}
@@ -535,7 +542,7 @@ function backupRestore(){const inp=byId("restoreIn");inp.value="";inp.onchange=a
 
 /* ---------- Προτάσεις συμπλήρωσης ---------- */
 const CAPS={honey:30,walnut:40,oats:80,pb:40,avocado:100,mince:250,chicken:250,beef:250,liver:200,salmon:250,oil:2,ham:3,turkey:5,gouda:3,cottage:250,graviera:40,mozz:60,feta:60,almond:40,egg:5,white:6,basmati:120,brownrice:120,penne:120,potato:300,sweetpot:300,yogurt:300,tuna:200,bread:2,tortilla:2,noodles:90,curry:25,coconut:100,seabream:1,toast:3,squid:1,kefir:300,banana:2,apple:2,pancake:3,gnocchi:250,blueberry:150};
-function capOf(f){if(CAPS[f.id]!=null)return CAPS[f.id];if(f.u==="g")return f.kcal>450?40:250;return 3}
+function capOf(f){if(CAPS[f.id]!=null){const df=DEFAULT_FOODS.find(x=>x.id===f.id);return df&&df.u!=="g"&&f.u==="g"?CAPS[f.id]*(svG(f)||50):CAPS[f.id]}if(f.u==="g")return f.kcal>450?40:250;return 3}
 function roundQty(f,q){if(f.u==="g"&&hasSv(f)){const h=svG(f)/2;return Math.max(h,Math.round(q/h)*h)}if(f.u==="g")return Math.max(10,Math.round(q/5)*5);return Math.max(.5,Math.round(q*2)/2)}
 function okQty(f,q){return (f.u==="g"?q>=10:q>=.5)&&q<=capOf(f)}
 function suggest(Rk,Rp,slot){
@@ -776,18 +783,17 @@ function showLabel(r,slot,replaceId,code){
    ${catChips("Άλλα")}
    ${r.found?"":`<p class="note">Το barcode ${esc(code||"")} δεν υπάρχει στη βάση Open Food Facts. Συμπλήρωσε τις τιμές από την ετικέτα: θα το θυμάμαι την επόμενη φορά.</p>`}<span class="label">Ανά 100 γρ. — έλεγξε ότι ταιριάζουν με την ετικέτα</span>
    <div class="form">${[["kcal","Θερμίδες"],["p","Πρωτεΐνη"],["c","Υδατάνθρακες"],["f","Λιπαρά"]].map(([k,l])=>`<label class="field"><span>${l}</span><input id="l-${k}" type="number" inputmode="decimal" value="${r1(num(p[k]))}"></label>`).join("")}</div>
-   <span class="label">Μερίδα (προαιρετικό) — π.χ. 1 φέτα = 25 γρ., για να μετράς σε φέτες</span>
-   <div class="form"><label class="field"><span>Λέγεται</span><input id="l-sn" value="${esc(r.serving?(r.svName||"μερίδα"):"")}" placeholder="φέτα"></label><label class="field"><span>Γραμμάρια</span><input id="l-sg" type="number" inputmode="decimal" value="${r.serving?r1(r.serving):""}" placeholder="25"></label></div>
+   ${svToggleHTML("l",!!r.serving,r.serving?(r.svName||"μερίδα"):"",r.serving?r1(r.serving):"")}
    ${slot==null?`<div class="row"><button class="btn primary" id="saveOnly">Αποθήκευση</button></div>`:`<div class="field"><span>Πόσο έφαγες;</span><div id="lqw"></div></div>
    <div class="row"><button class="btn primary" id="addDay">Αποθήκευση & προσθήκη στο ${SLOTS[slot].n}</button><button class="btn" id="saveOnly">Μόνο αποθήκευση στα τρόφιμα</button></div>`}`,()=>{
    byId("x").onclick=closeSheet;bindCats();
-   const svOf=()=>({u:"g",sn:byId("l-sn").value.trim(),sg:num(byId("l-sg").value)});
+   const svOf=()=>({u:"g",...readSv("l")});
    const mk=()=>{const s=svOf();return{id:uid(),name:byId("ln").value.trim()||"Νέο προϊόν",u:"g",kcal:num(byId("l-kcal").value),p:num(byId("l-p").value),c:num(byId("l-c").value),f:num(byId("l-f").value),pn:"",est:false,cat:readCat(),bc:code||null,...(s.sg>0?{sg:s.sg,sn:s.sn||"μερίδα"}:{})}};
    let getG=()=>100;
    const drawQ=g=>{if(slot==null)return;const t=svOf();byId("lqw").innerHTML=qtyBox(t,g);getG=bindQty(t,()=>{})};
    drawQ(r.serving||100);
    byId("l-sn").oninput=()=>{if(slot==null)return;const n=+byId("qty").value,was=!!document.querySelector('[data-qu="sv"].on'),t=svOf();drawQ(was&&hasSv(t)&&n>0?n*t.sg:getG())};
-   byId("l-sg").oninput=byId("l-sn").oninput;
+   byId("l-sg").oninput=byId("l-sn").oninput;bindSvToggle("l",()=>byId("l-sn").oninput());
    byId("saveOnly").onclick=()=>{const f=mk();S.lib.foods.push(f);saveLib();closeSheet();toast("Αποθηκεύτηκε στα τρόφιμα");render()};
    if(slot!=null)byId("addDay").onclick=()=>{const f=mk();S.lib.foods.push(f);saveLib();const g=getG()||100;
      const it={type:"food",ref:f.id,qty:g};placeItems([it],slot,replaceId)}})}
@@ -876,20 +882,27 @@ function renderFoods(){
 
 function editFood(id){
   const f=id?food(id):{id:uid(),name:"",u:"g",kcal:"",p:"",c:"",f:"",pn:"",est:false,cat:"Άλλα"};
+  // Όλα τα υλικά καταχωρούνται ανά 100 γρ. Ένα παλιό «ανά τεμάχιο» μετατρέπεται όταν ξέρουμε τα γραμμάρια του τεμαχίου.
+  const pc=f.u!=="g",g0=svG(f),KS=[["fk","kcal","Θερμίδες"],["fp","p","Πρωτεΐνη (γρ.)"],["fc","c","Υδατάνθρακες (γρ.)"],["ff","f","Λιπαρά (γρ.)"]];
+  const per=(k,g)=>{const v=f[k];if(v===""||v==null)return"";return pc?(g>0?r1(v*100/g):""):v};
   sheet(`<div class="row between"><h2>${id?"Επεξεργασία υλικού":"Νέο υλικό"}</h2><button class="btn ghost" id="x">Κλείσιμο</button></div>
    <label class="field"><span>Όνομα</span><input id="fn" value="${esc(f.name)}"></label>
    ${catChips(f.cat||"Άλλα")}
-   <div class="form"><label class="field"><span>Οι τιμές είναι</span><select id="fu"><option value="g" ${f.u==="g"?"selected":""}>ανά 100 γρ.</option><option value="pc" ${f.u==="pc"?"selected":""}>ανά τεμάχιο / φέτα / κουταλιά</option></select></label>
-</div>
-   <span class="label" id="svl"></span>
-   <div class="form"><label class="field"><span>Λέγεται</span><input id="fsn" value="${esc(f.u==="g"?(f.sn||""):(f.pn?svName(f):""))}" placeholder="φέτα"></label><label class="field"><span>Γραμμάρια</span><input id="fsg" type="number" inputmode="decimal" value="${hasSv(f)?svG(f):""}" placeholder="25"></label></div>
-   <div class="form">${[["fk","Θερμίδες",f.kcal],["fp","Πρωτεΐνη (γρ.)",f.p],["fc","Υδατάνθρακες (γρ.)",f.c],["ff","Λιπαρά (γρ.)",f.f]].map(([i,l,v])=>`<label class="field"><span>${l}</span><input id="${i}" type="number" inputmode="decimal" value="${v??""}"></label>`).join("")}</div>
+   ${pc?`<p class="note">Αυτό το υλικό ήταν «ανά ${esc(unitTxt(f))}» (${r0(f.kcal)} kcal το ένα). ${g0>0?"Οι τιμές μετατράπηκαν σε ανά 100 γρ.":"Γράψε κάτω πόσα γραμμάρια είναι 1 "+esc(svName(f))+" για να γίνει ανά 100 γρ."} Ό,τι έχεις ήδη βάλει στο πρόγραμμα και στις μέρες μετατρέπεται μόνο του με την αποθήκευση.</p>`:""}
+   <span class="label">Τιμές ανά 100 γρ.</span>
+   <div class="form">${KS.map(([i,k,l])=>`<label class="field"><span>${l}</span><input id="${i}" type="number" inputmode="decimal" value="${per(k,g0)}"></label>`).join("")}</div>
+   ${svToggleHTML("f",pc||hasSv(f),pc?svName(f):(f.sn||""),g0||"",pc)}
    <div class="row"><button class="btn primary" id="ok">Αποθήκευση</button>${id?'<button class="btn danger" id="del">Διαγραφή</button>':""}</div><div id="delc"></div>`,()=>{
-   bindCats();const sync=()=>{byId("svl").textContent=byId("fu").value==="g"?"Μερίδα (προαιρετικό): π.χ. 1 φέτα = 25 γρ., για να μετράς σε φέτες":"Τεμάχιο: πώς λέγεται, και πόσα γραμμάρια (προαιρετικό) για να μετράς και σε γρ."};byId("fu").onchange=sync;sync();byId("x").onclick=closeSheet;
-   byId("ok").onclick=()=>{const name=byId("fn").value.trim(),k=+byId("fk").value;if(!name||!(k>=0)||byId("fk").value===""){toast("Συμπλήρωσε όνομα και θερμίδες");return}
-     Object.assign(f,{name,u:byId("fu").value,kcal:k,p:num(byId("fp").value),c:num(byId("fc").value),f:num(byId("ff").value),est:false,cat:readCat()});
-     const sg=num(byId("fsg").value),sn=byId("fsn").value.trim();delete f.sg;delete f.sn;
-     if(f.u==="g"){if(sg>0){f.sg=sg;f.sn=sn||"μερίδα"}}else{f.pn=sn||"τεμ.";if(sg>0)f.sg=sg}if(!id)S.lib.foods.push(f);saveLib();closeSheet();render()};
+   bindCats();bindSvToggle("f");byId("x").onclick=closeSheet;
+   if(pc){const touched=new Set();KS.forEach(([i])=>byId(i).addEventListener("input",()=>touched.add(i)));
+     byId("f-sg").oninput=()=>{const g=num(byId("f-sg").value);KS.forEach(([i,k])=>{if(!touched.has(i))byId(i).value=per(k,g)})}}
+   byId("ok").onclick=async()=>{const name=byId("fn").value.trim(),k=+byId("fk").value;if(!name||!(k>=0)||byId("fk").value===""){toast("Συμπλήρωσε όνομα και θερμίδες");return}
+     const sv=readSv("f");if(pc&&!(sv.sg>0)){toast("Γράψε πόσα γραμμάρια είναι 1 "+svName(f));return}
+     byId("ok").disabled=true;
+     if(pc&&id)await pcToGrams(id,sv.sg);
+     Object.assign(f,{name,u:"g",kcal:k,p:num(byId("fp").value),c:num(byId("fc").value),f:num(byId("ff").value),pn:"",est:false,cat:readCat()});
+     delete f.sg;delete f.sn;if(sv.sg>0){f.sg=sv.sg;f.sn=sv.sn||"μερίδα"}
+     if(!id)S.lib.foods.push(f);saveLib();if(pc&&id)syncPlan();closeSheet();render()};
    const d=byId("del");if(d)d.onclick=()=>{byId("delc").innerHTML=`<div class="row"><span class="small">Σίγουρα;</span><button class="btn danger sm" id="dy">Ναι, διαγραφή</button></div>`;
      const used=foodUsage(id);
      byId("delc").innerHTML=`<div class="card" style="gap:8px"><span class="small">${used.length?"Χρησιμοποιείται σε: "+used.map(esc).join(", ")+".":"Δεν χρησιμοποιείται κάπου."}</span>
@@ -952,6 +965,10 @@ async function applyEverywhere(mapItem){
     const before=JSON.stringify(doc.items),items=doc.items.flatMap(it=>mapItem(it,d<today));
     if(JSON.stringify(items)!==before){const nd={...doc,items};S.docs[d]=nd;save("day:"+d,nd)}}
   if(S.dayEdited){S.day.items=S.day.items.flatMap(it=>mapItem(it,S.date<today));saveDay(false)}}
+// Παλιό υλικό «ανά τεμάχιο» → ανά 100 γρ.: οι ποσότητες (τεμάχια) γίνονται γραμμάρια παντού
+async function pcToGrams(id,g){
+  await applyEverywhere(it=>[it.type==="food"&&it.ref===id?{...it,qty:r1(it.qty*g)}:it]);
+  S.lib.meals.forEach(m=>["parts","ing"].forEach(k=>{if(Array.isArray(m[k]))m[k].forEach(x=>{if(x.food===id)x.qty=r1(x.qty*g)})}))}
 async function deleteFood(id,replId){
   const R=replId?food(replId):null;
   const single=new Set(S.lib.meals.filter(m=>{const L=ingOf(m);return L.length===1&&L[0].food===id}).map(m=>m.id));
