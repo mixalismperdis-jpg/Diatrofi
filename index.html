@@ -246,7 +246,7 @@ nav.tabs button.on{color:var(--ink)}
 /* ---------- Αρχικά δεδομένα (από το αρχείο Numbers) ---------- */
 // Έκδοση: ίδιο νούμερο με το C στο sw.js. Η ώρα δεν γράφεται με το χέρι: είναι η ώρα που ανέβηκε το index.html
 // στο GitHub Pages (κεφαλίδα Last-Modified της απάντησης που φυλάει το service worker), σε ώρα της συσκευής.
-const APP_VER={v:"v25",at:""};
+const APP_VER={v:"v26",at:""};
 // Χωρίς ζουμ (pinch / double-tap), και στο iOS που αγνοεί το user-scalable=no
 (()=>{const no=e=>e.preventDefault();
   ["gesturestart","gesturechange","gestureend"].forEach(t=>document.addEventListener(t,no,{passive:false}));
@@ -299,24 +299,35 @@ const Z=()=>({k:0,p:0,c:0,f:0});
 const add=(a,b,m=1)=>{a.k+=b.k*m;a.p+=b.p*m;a.c+=b.c*m;a.f+=b.f*m;return a};
 
 function foodNutr(f,q){const m=f.u==="g"?q/100:q;return{k:f.kcal*m,p:f.p*m,c:(f.c||0)*m,f:(f.f||0)*m}}
-// Μερίδα σε γραμμάρια (π.χ. 1 φέτα = 25 γρ.) για τρόφιμα ανά 100 γρ. Η ποσότητα αποθηκεύεται πάντα σε γρ.
-const hasSv=f=>!!f&&f.u==="g"&&+f.sg>0;
-const svName=f=>String(f.sn||"").trim()||"μερίδα";
+// Μερίδα, ίδια λογική για όλα τα τρόφιμα: ανά 100 γρ. με sg/sn (π.χ. 1 φέτα = 25 γρ.),
+// ή ανά τεμάχιο με pn και γραμμάρια από sg ή από το pn (π.χ. «φέτα 25γρ»). Η αποθηκευμένη ποσότητα δεν αλλάζει (γρ. ή τεμάχια).
+const GRM=/\s*(\d+(?:[.,]\d+)?)\s*γρ\.?/;
+const svG=f=>{if(!f)return 0;if(+f.sg>0)return +f.sg;if(f.u!=="g"){const m=String(f.pn||"").match(GRM);if(m)return +m[1].replace(",",".")}return 0};
+const hasSv=f=>svG(f)>0;
+const svName=f=>f.u==="g"?(String(f.sn||"").trim()||"μερίδα"):(String(f.pn||"").replace(GRM,"").trim()||"τεμ.");
+const perSv=f=>f.u==="g"?svG(f):1, gPer=f=>f.u==="g"?1:svG(f);
+const toSv=(f,q)=>Math.round(q/perSv(f)*100)/100, toG=(f,q)=>r1(q*gPer(f));
+const fromSv=(f,v)=>f.u==="g"?r1(v*perSv(f)):Math.round(v*100)/100, fromG=(f,v)=>f.u==="g"?r1(v):Math.round(v/gPer(f)*100)/100;
 const plur=(w,n)=>n<=1?w:w.replace(/^(\S+?)(α|η)(?=\s|$)/,"$1ες").replace(/^(\S+?)ο(?=\s|$)/,"$1α").replace(/^(\S+?)ι(?=\s|$)/,"$1ια");
 const nEl=n=>(Math.round(n*100)/100).toLocaleString("el-GR");
 const svTxt=(f,n)=>nEl(n)+" "+plur(svName(f),n);
-function gramsTxt(f,g){if(hasSv(f)){const n=g/f.sg;if(Math.abs(n*2-Math.round(n*2))<.02&&n>0)return svTxt(f,Math.round(n*2)/2)+" · "+r1(g)+" γρ."}return r1(g)+" γρ."}
-// Πεδίο ποσότητας με εναλλαγή μερίδες ↔ γρ. (για τρόφιμα με μερίδα)
+const unitTxt=f=>f.u==="g"?"100 γρ.":svName(f)+(hasSv(f)?" "+r1(svG(f))+" γρ.":"");
+const svInfo=f=>hasSv(f)?"1 "+svName(f)+" = "+r1(svG(f))+" γρ.":"";
+// π.χ. «2 φέτες · 50 γρ.» για όλα τα τρόφιμα με μερίδα
+function qtyTxt(f,q){if(f.u!=="g")return svTxt(f,q)+(hasSv(f)?" · "+toG(f,q)+" γρ.":"");
+  if(hasSv(f)){const n=q/svG(f);if(Math.abs(n*2-Math.round(n*2))<.02&&n>0)return svTxt(f,Math.round(n*2)/2)+" · "+r1(q)+" γρ."}return r1(q)+" γρ."}
+// Πεδίο ποσότητας: μερίδες ↔ γρ. όπου ξέρουμε τα γραμμάρια της μερίδας
 let QU="sv";
-function qtyBox(f,g){const sv=hasSv(f)&&QU==="sv",v=sv?Math.round(g/f.sg*100)/100:g;
-  return `<div class="stepper"><button class="btn" id="qm">−</button><input id="qty" type="number" inputmode="decimal" value="${v}" step="${sv||f.u!=="g"?.5:5}"><button class="btn" id="qp">+</button>${hasSv(f)?`<div class="seg"><button data-qu="sv" class="${sv?"on":""}">${esc(plur(svName(f),2))}</button><button data-qu="g" class="${sv?"":"on"}">γρ.</button></div>`:`<span class="muted">${f.u==="g"?"γρ.":esc(f.pn||"τεμ.")}</span>`}</div>${hasSv(f)?'<span class="muted small" id="qhint"></span>':""}`}
-function bindQty(f,upd){const sv=()=>hasSv(f)&&QU==="sv",st=()=>sv()||f.u!=="g"?.5:5,el=byId("qty");
-  const get=()=>{const v=+el.value||0;return sv()?Math.round(v*f.sg*10)/10:v};
-  const ch=()=>{const h=byId("qhint");if(h)h.textContent="1 "+svName(f)+" = "+r1(+f.sg)+" γρ."+(sv()?" · σύνολο "+r1(get())+" γρ.":" · "+nEl(get()/f.sg)+" "+plur(svName(f),2));upd(get())};
+const inSvOf=f=>hasSv(f)?QU==="sv":f.u!=="g";
+function qtyBox(f,q){const sv=inSvOf(f),v=sv?toSv(f,q):toG(f,q);
+  return `<div class="stepper"><button class="btn" id="qm">−</button><input id="qty" type="number" inputmode="decimal" value="${v}" step="${sv?.5:5}"><button class="btn" id="qp">+</button>${hasSv(f)?`<div class="seg"><button data-qu="sv" class="${sv?"on":""}">${esc(plur(svName(f),2))}</button><button data-qu="g" class="${sv?"":"on"}">γρ.</button></div>`:`<span class="muted">${f.u==="g"?"γρ.":esc(plur(svName(f),2))}</span>`}</div>${hasSv(f)?'<span class="muted small" id="qhint"></span>':""}`}
+function bindQty(f,upd){const sv=()=>inSvOf(f),st=()=>sv()?.5:5,el=byId("qty");
+  const get=()=>{const v=+el.value||0;return sv()?fromSv(f,v):fromG(f,v)};
+  const ch=()=>{const h=byId("qhint");if(h)h.textContent=svInfo(f)+(sv()?" · σύνολο "+toG(f,get())+" γρ.":" · "+nEl(toSv(f,get()))+" "+plur(svName(f),2));upd(get())};
   byId("qm").onclick=()=>{el.value=Math.max(0,Math.round(((+el.value||0)-st())*100)/100);ch()};
   byId("qp").onclick=()=>{el.value=Math.round(((+el.value||0)+st())*100)/100;ch()};
   el.oninput=ch;
-  document.querySelectorAll("[data-qu]").forEach(b=>b.onclick=()=>{const g=get();QU=b.dataset.qu;el.value=sv()?Math.round(g/f.sg*100)/100:r1(g);el.step=st();document.querySelectorAll("[data-qu]").forEach(x=>x.classList.toggle("on",x===b));ch()});
+  document.querySelectorAll("[data-qu]").forEach(b=>b.onclick=()=>{const q=get();QU=b.dataset.qu;el.value=sv()?toSv(f,q):toG(f,q);el.step=st();document.querySelectorAll("[data-qu]").forEach(x=>x.classList.toggle("on",x===b));ch()});
   ch();return get}
 const servOf=m=>Math.max(1,+m.n||1);
 function mealNutr(m){
@@ -327,7 +338,7 @@ function itemNutr(it){
   if(it.type==="custom")return add(Z(),{k:+it.kcal||0,p:+it.p||0,c:+it.c||0,f:+it.f||0},it.qty||1);
   const f=food(it.ref);return f?foodNutr(f,it.qty):Z()}
 function itemName(it){if(it.type==="meal"){const m=meal(it.ref);return m?m.name:"(διαγραμμένη συνταγή)"}if(it.type==="custom")return it.name;const f=food(it.ref);return f?f.name:"(διαγραμμένο τρόφιμο)"}
-function qtyLabel(it){if(it.type==="meal")return it.qty===1?"":"×"+it.qty;if(it.type==="custom")return (it.grams?it.grams+" γρ. · ":"")+"από φωτογραφία";const f=food(it.ref);if(!f)return"";return f.u==="g"?gramsTxt(f,it.qty):it.qty+" "+(f.pn||"τεμ.")}
+function qtyLabel(it){if(it.type==="meal")return it.qty===1?"":"×"+it.qty;if(it.type==="custom")return (it.grams?it.grams+" γρ. · ":"")+"από φωτογραφία";const f=food(it.ref);if(!f)return"";return qtyTxt(f,it.qty)}
 function sumItems(items){const t=Z();for(const it of items)add(t,itemNutr(it));return t}
 function normPlan(p){if(!p||!Array.isArray(p.days))p=DEFAULT_PLAN;
   let changed=false;const days=p.days.map(row=>{if(Array.isArray(row)&&row.some(x=>x===null||typeof x==="string")){changed=true;return row.map((ref,slot)=>ref?{id:uid(),slot,type:"meal",ref,qty:1}:null).filter(Boolean)}return Array.isArray(row)?row:[]});
@@ -525,7 +536,7 @@ function backupRestore(){const inp=byId("restoreIn");inp.value="";inp.onchange=a
 /* ---------- Προτάσεις συμπλήρωσης ---------- */
 const CAPS={honey:30,walnut:40,oats:80,pb:40,avocado:100,mince:250,chicken:250,beef:250,liver:200,salmon:250,oil:2,ham:3,turkey:5,gouda:3,cottage:250,graviera:40,mozz:60,feta:60,almond:40,egg:5,white:6,basmati:120,brownrice:120,penne:120,potato:300,sweetpot:300,yogurt:300,tuna:200,bread:2,tortilla:2,noodles:90,curry:25,coconut:100,seabream:1,toast:3,squid:1,kefir:300,banana:2,apple:2,pancake:3,gnocchi:250,blueberry:150};
 function capOf(f){if(CAPS[f.id]!=null)return CAPS[f.id];if(f.u==="g")return f.kcal>450?40:250;return 3}
-function roundQty(f,q){if(hasSv(f)){const h=f.sg/2;return Math.max(h,Math.round(q/h)*h)}if(f.u==="g")return Math.max(10,Math.round(q/5)*5);return Math.max(.5,Math.round(q*2)/2)}
+function roundQty(f,q){if(f.u==="g"&&hasSv(f)){const h=svG(f)/2;return Math.max(h,Math.round(q/h)*h)}if(f.u==="g")return Math.max(10,Math.round(q/5)*5);return Math.max(.5,Math.round(q*2)/2)}
 function okQty(f,q){return (f.u==="g"?q>=10:q>=.5)&&q<=capOf(f)}
 function suggest(Rk,Rp,slot){
   const fit=m=>m.s&&m.s.includes(slot)?-.4:.6;
@@ -609,7 +620,7 @@ function renderToday(){
   else{const sg=suggest(Rk,Rp,defSlot);
     h+=`<div class="row"><span class="small muted">${Rk<0?"Οι θερμίδες πέρασαν, προτιμώ άπαχη πρωτεΐνη. ":""}Στο</span><select id="suggSlot" style="width:auto;padding:5px 8px">${SLOTS.map((x,i)=>`<option value="${i}" ${i===defSlot?"selected":""}>${x.n}${x.t?" ("+x.t+")":""}</option>`).join("")}</select></div>`;
     if(!sg.length)h+=`<p class="note">Δεν βρήκα συνδυασμό που να ταιριάζει. Πρόσθεσε τρόφιμα στη λίστα σου.</p>`;
-    const fq=x=>`${x.f.u==="g"?esc(gramsTxt(x.f,x.q)):x.q+" "+esc(x.f.pn||"τεμ.")} ${esc(x.f.name)}`;
+    const fq=x=>`${esc(qtyTxt(x.f,x.q))} ${esc(x.f.name)}`;
     sg.forEach((o,ix)=>{const what=o.meal?esc(o.meal.name)+(o.s!==1?` <span class="muted">×${o.s}</span>`:"")+(o.extra?` <span class="muted">+</span> ${fq(o.extra)}`:""):o.parts.map(fq).join(" + ");
       h+=`<div class="sg"><span class="what">${what}</span><button class="btn sm primary" data-sugg="${ix}">Πρόσθεσε</button>
       <span class="res">+${MX(r0(o.k),r1(o.p))} → <b>${r0(s.k+o.k)}</b> / <b class="pr">${r1(s.p+o.p)}</b></span></div>`});
@@ -664,7 +675,7 @@ function pickerHTML(slot,q){
   const meals=S.lib.meals.filter(m=>!ql||m.name.toLowerCase().includes(ql)).sort((a,b)=>(b.s?.includes(slot)?1:0)-(a.s?.includes(slot)?1:0)||byName(a,b));
   const foods=S.lib.foods.filter(f=>!ql||f.name.toLowerCase().includes(ql)).sort(byName);
   const mv=m=>{const n=mealNutr(m);return `${MXn(n)}${servOf(m)>1?' <span class="muted">/μερίδα</span>':""}`};
-  const fv=f=>`${MX(f.kcal,f.p,f.c??0,f.f??0)} <span class="muted">/${f.u==="g"?"100γρ":esc(f.pn||"τεμ.")}</span>${hasSv(f)?` <span class="muted small">· 1 ${esc(svName(f))} ${r1(+f.sg)}γρ</span>`:""}`;
+  const fv=f=>`${MX(f.kcal,f.p,f.c??0,f.f??0)} <span class="muted">/${esc(unitTxt(f))}</span>${f.u==="g"&&hasSv(f)?` <span class="muted small">· ${esc(svInfo(f))}</span>`:""}`;
   const seg=`<div class="seg"><button id="ps-rec" class="${rec?"on":""}">Συνταγές (${meals.length})</button><button id="ps-ing" class="${rec?"":"on"}">Υλικά (${foods.length})</button></div>`;
   return seg+(rec?`<div class="opts">${meals.map(m=>`<button class="opt" data-pm="${m.id}"><span>${esc(m.name)}</span><span class="v">${mv(m)}</span></button>`).join("")||'<span class="note">Καμία συνταγή. Φτιάξε από την καρτέλα Τρόφιμα › Συνταγές.</span>'}</div>`
   :`<div class="opts">${foods.map(f=>`<button class="opt" data-pf="${f.id}"><span>${esc(f.name)}${f.est?' <span class="est">εκτίμηση</span>':""}</span><span class="v">${fv(f)}</span></button>`).join("")||'<span class="note">Κανένα υλικό.</span>'}</div>`)}
@@ -678,7 +689,7 @@ function openAddSheet(slot,replaceId){
     byId("pick").querySelectorAll("[data-pm]").forEach(b=>b.onclick=()=>commit({type:"meal",ref:b.dataset.pm,qty:1}));
     byId("pick").querySelectorAll("[data-pf]").forEach(b=>b.onclick=()=>askQty(food(b.dataset.pf)))};
   const commit=it=>{if(old){for(const k of Object.keys(old))if(!["id","slot"].includes(k))delete old[k];Object.assign(old,it)}else TG.get().push({id:uid(),slot,...it});TG.save();closeSheet();render()};
-  const askQty=f=>{const def=hasSv(f)?+f.sg:f.u==="g"?100:1;
+  const askQty=f=>{const def=f.u==="g"?(hasSv(f)?svG(f):100):1;
     sheet(`<h2>${esc(f.name)}</h2><div class="preview" id="pv"></div>
       ${qtyBox(f,def)}
       <div class="row"><button class="btn primary" id="ok">${old?"Αντικατάσταση":"Προσθήκη"}</button><button class="btn" id="cancel">Άκυρο</button></div>`,()=>{
@@ -692,12 +703,12 @@ function openAddSheet(slot,replaceId){
     byId("scanBtn").onclick=()=>startScan(slot,replaceId)},true)}
 
 function ingLines(m,v){const k=v/servOf(m);return ingOf(m).map(x=>{const f=food(x.food);if(!f)return"";const q=x.qty*k;
-  return `<div><span>${esc(f.name)}</span><b>${f.u==="g"?esc(gramsTxt(f,q)):esc(nEl(q)+" "+plur(f.pn||"τεμ.",q))}</b></div>`}).join("")}
+  return `<div><span>${esc(f.name)}</span><b>${esc(qtyTxt(f,q))}</b></div>`}).join("")}
 function openItemSheet(id){
   const it=TG.get().find(x=>x.id===id);if(!it)return;
   const isMeal=it.type==="meal",isCustom=it.type==="custom",f=it.type==="food"?food(it.ref):null,st=(isMeal||isCustom)?.5:(f&&f.u==="g"?5:.5);
   const base=itemNutr(it);
-  const unitLbl=isMeal||isCustom?"Μερίδες":hasSv(f)?"Ποσότητα":"Ποσότητα ("+(f&&f.u==="g"?"γρ.":esc(f?.pn||"τεμ."))+")";
+  const unitLbl=isMeal||isCustom?"Μερίδες":"Ποσότητα";
   sheet(`<div class="row between"><span class="label">${TG.kind==="plan"?DAYS[TG.d]+" · ":""}${SLOTS[it.slot].n}</span><button class="btn ghost" id="x">Κλείσιμο</button></div>
     <h2>${esc(itemName(it))}</h2><div class="preview" id="pv"></div>
     <div class="field"><span>${unitLbl}</span>
@@ -816,8 +827,8 @@ function shopAgg(){
     else if(it.type==="meal"){const m=meal(it.ref);if(!m)continue;const parts=m.parts&&m.parts.length?m.parts:m.ing;
       if(parts&&parts.length)parts.forEach(p=>addF(p.food,p.qty*it.qty/servOf(m)));else noIng.add(m.name)}}
   return{agg,noIng:[...noIng]}}
-function fmtQty(f,q){if(f.u==="g"){if(q>=1000){const kg=Math.round(q/10)/100;return kg.toLocaleString("el-GR")+(kg===1?" κιλό":" κιλά")}return Math.ceil(q/10)*10+" γρ."+(hasSv(f)?" ("+Math.ceil(q/f.sg-1e-9)+" "+plur(svName(f),2)+")":"")}
-  const n=Math.ceil(q-1e-9);const pn=(f.pn||"τεμ.").split(" ")[0];return n+" "+(pn==="φέτα"?(n===1?"φέτα":"φέτες"):pn==="κονσέρβα"?(n===1?"κονσέρβα":"κονσέρβες"):pn)}
+function fmtQty(f,q){if(f.u==="g"){if(q>=1000){const kg=Math.round(q/10)/100;return kg.toLocaleString("el-GR")+(kg===1?" κιλό":" κιλά")}return Math.ceil(q/10)*10+" γρ."+(hasSv(f)?" ("+Math.ceil(q/svG(f)-1e-9)+" "+plur(svName(f),2)+")":"")}
+  const n=Math.ceil(q-1e-9);return n+" "+plur(svName(f),n)}
 function shopKey(){return "shop:"+S.shopRange+":"+shopDates()[0]}
 function shopHTML(){
   const {agg,noIng}=shopAgg(),done=lsGet(shopKey())||{};
@@ -848,7 +859,7 @@ function renderFoods(){
   <input id="fq" placeholder="${rec?"Αναζήτηση συνταγής":"Αναζήτηση υλικού"}" value="${esc(S.foodQ)}" autocomplete="off">`;
   if(!rec)h+=`<section class="card" style="gap:4px"><div class="row between"><h3>Υλικά</h3><div class="row"><button class="btn sm" id="labelScan">Barcode</button><button class="btn sm primary" id="newFood">+ Νέο</button></div></div>
   <div class="list">${CATS.map(c=>{const g=foods.filter(f=>(CATS.includes(f.cat)?f.cat:"Άλλα")===c);return g.length?`<span class="label" style="margin-top:8px">${esc(c)} (${g.length})</span>`+g.map(f=>`<div class="li"><span class="n">${esc(f.name)}${f.est?' <span class="est">εκτίμηση</span>':""}</span>
-   <span class="v">${MX(f.kcal,f.p,f.c??0,f.f??0)}<br><span class="muted">ανά ${f.u==="g"?"100 γρ.":esc(f.pn||"τεμ.")}${hasSv(f)?" · 1 "+esc(svName(f))+" "+r1(+f.sg)+" γρ.":""}</span></span><button class="btn sm" data-ef="${f.id}">Επεξ.</button></div>`).join(""):""}).join("")||'<span class="note">Κανένα.</span>'}</div>
+   <span class="v">${MX(f.kcal,f.p,f.c??0,f.f??0)}<br><span class="muted">ανά ${esc(unitTxt(f))}${f.u==="g"&&hasSv(f)?" · "+esc(svInfo(f)):""}</span></span><button class="btn sm" data-ef="${f.id}">Επεξ.</button></div>`).join(""):""}).join("")||'<span class="note">Κανένα.</span>'}</div>
    <p class="note">kcal = θερμίδες, <span class="pr">P = πρωτεΐνη</span>, <span style="color:var(--carb)">C = υδατάνθρακες</span>, <span style="color:var(--fat)">F = λιπαρά</span>. «Εκτίμηση» σημαίνει συνηθισμένες τιμές που έβαλα εγώ: διόρθωσέ τες από τη συσκευασία.</p></section>`;
   else h+=`<section class="card" style="gap:4px"><div class="row between"><h3>Συνταγές</h3><button class="btn sm primary" id="newMeal">+ Νέα συνταγή</button></div>
   <div class="list">${meals.map(m=>{const n=mealNutr(m),sv=servOf(m);return `<div class="li"><span class="n">${esc(m.name)}</span>
@@ -870,15 +881,15 @@ function editFood(id){
    ${catChips(f.cat||"Άλλα")}
    <div class="form"><label class="field"><span>Οι τιμές είναι</span><select id="fu"><option value="g" ${f.u==="g"?"selected":""}>ανά 100 γρ.</option><option value="pc" ${f.u==="pc"?"selected":""}>ανά τεμάχιο / φέτα / κουταλιά</option></select></label>
 </div>
-   <label class="field" id="pnw"><span>Όνομα μονάδας (π.χ. φέτα 25γρ)</span><input id="fpn" value="${esc(f.pn)}"></label>
-   <div id="svw"><span class="label">Μερίδα (προαιρετικό) — π.χ. 1 φέτα = 25 γρ., για να μετράς σε φέτες</span>
-   <div class="form"><label class="field"><span>Λέγεται</span><input id="fsn" value="${esc(f.sn||"")}" placeholder="φέτα"></label><label class="field"><span>Γραμμάρια</span><input id="fsg" type="number" inputmode="decimal" value="${+f.sg>0?f.sg:""}" placeholder="25"></label></div></div>
+   <span class="label" id="svl"></span>
+   <div class="form"><label class="field"><span>Λέγεται</span><input id="fsn" value="${esc(f.u==="g"?(f.sn||""):(f.pn?svName(f):""))}" placeholder="φέτα"></label><label class="field"><span>Γραμμάρια</span><input id="fsg" type="number" inputmode="decimal" value="${hasSv(f)?svG(f):""}" placeholder="25"></label></div>
    <div class="form">${[["fk","Θερμίδες",f.kcal],["fp","Πρωτεΐνη (γρ.)",f.p],["fc","Υδατάνθρακες (γρ.)",f.c],["ff","Λιπαρά (γρ.)",f.f]].map(([i,l,v])=>`<label class="field"><span>${l}</span><input id="${i}" type="number" inputmode="decimal" value="${v??""}"></label>`).join("")}</div>
    <div class="row"><button class="btn primary" id="ok">Αποθήκευση</button>${id?'<button class="btn danger" id="del">Διαγραφή</button>':""}</div><div id="delc"></div>`,()=>{
-   bindCats();const sync=()=>{byId("pnw").hidden=byId("fu").value!=="pc";byId("svw").hidden=byId("fu").value!=="g"};byId("fu").onchange=sync;sync();byId("x").onclick=closeSheet;
+   bindCats();const sync=()=>{byId("svl").textContent=byId("fu").value==="g"?"Μερίδα (προαιρετικό): π.χ. 1 φέτα = 25 γρ., για να μετράς σε φέτες":"Τεμάχιο: πώς λέγεται, και πόσα γραμμάρια (προαιρετικό) για να μετράς και σε γρ."};byId("fu").onchange=sync;sync();byId("x").onclick=closeSheet;
    byId("ok").onclick=()=>{const name=byId("fn").value.trim(),k=+byId("fk").value;if(!name||!(k>=0)||byId("fk").value===""){toast("Συμπλήρωσε όνομα και θερμίδες");return}
-     Object.assign(f,{name,u:byId("fu").value,kcal:k,p:num(byId("fp").value),c:num(byId("fc").value),f:num(byId("ff").value),pn:byId("fpn").value.trim(),est:false,cat:readCat()});
-     const sg=num(byId("fsg").value);if(f.u==="g"&&sg>0){f.sg=sg;f.sn=byId("fsn").value.trim()||"μερίδα"}else{delete f.sg;delete f.sn}if(!id)S.lib.foods.push(f);saveLib();closeSheet();render()};
+     Object.assign(f,{name,u:byId("fu").value,kcal:k,p:num(byId("fp").value),c:num(byId("fc").value),f:num(byId("ff").value),est:false,cat:readCat()});
+     const sg=num(byId("fsg").value),sn=byId("fsn").value.trim();delete f.sg;delete f.sn;
+     if(f.u==="g"){if(sg>0){f.sg=sg;f.sn=sn||"μερίδα"}}else{f.pn=sn||"τεμ.";if(sg>0)f.sg=sg}if(!id)S.lib.foods.push(f);saveLib();closeSheet();render()};
    const d=byId("del");if(d)d.onclick=()=>{byId("delc").innerHTML=`<div class="row"><span class="small">Σίγουρα;</span><button class="btn danger sm" id="dy">Ναι, διαγραφή</button></div>`;
      const used=foodUsage(id);
      byId("delc").innerHTML=`<div class="card" style="gap:8px"><span class="small">${used.length?"Χρησιμοποιείται σε: "+used.map(esc).join(", ")+".":"Δεν χρησιμοποιείται κάπου."}</span>
@@ -891,8 +902,9 @@ function editMeal(id){
   const m=id?JSON.parse(JSON.stringify(meal(id))):{id:uid(),name:"",kcal:0,p:0,c:0,f:0,s:[],n:1,parts:[],ing:null};
   let mode=m.parts&&m.parts.length?"parts":id?"fixed":"parts";if(!m.parts)m.parts=[];if(!m.ing)m.ing=[];
   const list=()=>mode==="parts"?m.parts:m.ing;
-  // μονάδα εμφάνισης ανά υλικό (μόνο στην οθόνη, η ποσότητα μένει σε γρ.)
-  const PU=new WeakMap(),puOf=pt=>{if(!PU.has(pt)){const f=food(pt.food),n=hasSv(f)?pt.qty/f.sg:0;PU.set(pt,n>0&&Math.abs(n*2-Math.round(n*2))<.02?"sv":"g")}return PU.get(pt)};
+  // μονάδα εμφάνισης ανά υλικό (μόνο στην οθόνη, η αποθηκευμένη ποσότητα δεν αλλάζει)
+  const PU=new WeakMap(),puOf=pt=>{const f=food(pt.food);if(!f)return"g";if(!hasSv(f))return f.u==="g"?"g":"sv";
+    if(!PU.has(pt)){const n=f.u==="g"?pt.qty/svG(f):1;PU.set(pt,n>0&&Math.abs(n*2-Math.round(n*2))<.02?"sv":"g")}return PU.get(pt)};
   const draw=()=>{
     const n=mode==="parts"?mealNutr({parts:m.parts,n:m.n}):{k:+m.kcal||0,p:+m.p||0,c:+m.c||0,f:+m.f||0};
     const rows=list();
@@ -902,13 +914,13 @@ function editMeal(id){
      <div class="seg"><button id="mpar" class="${mode==="parts"?"on":""}">Από υλικά</button><button id="mfix" class="${mode==="fixed"?"on":""}">Σταθερές τιμές</button></div>
      ${mode==="fixed"?`<span class="label">Τιμές ανά μερίδα</span><div class="form">${[["mk","Θερμίδες",m.kcal],["mp","Πρωτεΐνη",m.p],["mc","Υδατάνθρακες",m.c],["mf","Λιπαρά",m.f]].map(([i,l,v])=>`<label class="field"><span>${l}</span><input id="${i}" type="number" inputmode="decimal" value="${v??0}"></label>`).join("")}</div>`:""}
      <span class="label">${mode==="parts"?"Υλικά (για όλη τη συνταγή)":"Υλικά για τη λίστα ψωνιών (για όλη τη συνταγή)"}</span>
-     <div class="opts">${rows.map((pt,i)=>{const f=food(pt.food),sv=hasSv(f)&&puOf(pt)==="sv";return `<div class="pitem"><span>${esc(f?f.name:"?")}</span><input type="number" inputmode="decimal" id="pq-${i}" data-pq="${i}" value="${sv?Math.round(pt.qty/f.sg*100)/100:pt.qty}">${hasSv(f)?`<button class="btn sm" data-pu="${i}" title="Αλλαγή μονάδας">${sv?esc(plur(svName(f),2)):"γρ."}</button>`:`<span class="muted small">${f&&f.u==="g"?"γρ.":esc(f?.pn||"τεμ.")}</span>`}<button class="btn sm danger" data-pr="${i}" aria-label="Αφαίρεση">×</button></div>`}).join("")||'<span class="note">Κανένα υλικό ακόμα.</span>'}</div>
+     <div class="opts">${rows.map((pt,i)=>{const f=food(pt.food),sv=puOf(pt)==="sv";return `<div class="pitem"><span>${esc(f?f.name:"?")}</span><input type="number" inputmode="decimal" id="pq-${i}" data-pq="${i}" value="${!f?pt.qty:sv?toSv(f,pt.qty):toG(f,pt.qty)}">${hasSv(f)?`<button class="btn sm" data-pu="${i}" title="Αλλαγή μονάδας">${sv?esc(plur(svName(f),2)):"γρ."}</button>`:`<span class="muted small">${!f||f.u==="g"?"γρ.":esc(plur(svName(f),2))}</span>`}<button class="btn sm danger" data-pr="${i}" aria-label="Αφαίρεση">×</button></div>`}).join("")||'<span class="note">Κανένα υλικό ακόμα.</span>'}</div>
      <select id="addPart"><option value="">+ Πρόσθεσε υλικό…</option>${[...S.lib.foods].sort(byName).map(f=>`<option value="${f.id}">${esc(f.name)}</option>`).join("")}</select>
      <div class="tot" id="mtot">${servOf(m)>1?"Ανά μερίδα":"Σύνολο"}: ${nv(n)}</div>
      <div class="field"><span>Ταιριάζει για</span><div class="row">${SLOTS.map((s,i)=>`<label class="chip"><input type="checkbox" id="ms-${i}" data-ms="${i}" ${m.s?.includes(i)?"checked":""}> ${s.n} ${s.t}</label>`).join("")}</div></div>
      <div class="row"><button class="btn primary" id="ok">Αποθήκευση</button>${id?'<button class="btn danger" id="del">Διαγραφή</button>':""}</div><div id="delc"></div>`,bind)};
   const grab=()=>{m.name=byId("mn").value;m.n=Math.max(1,Math.round(+byId("mserv").value||1));if(byId("mk")){m.kcal=num(byId("mk").value);m.p=num(byId("mp").value);m.c=num(byId("mc").value);m.f=num(byId("mf").value)}
-    document.querySelectorAll("[data-pq]").forEach(i=>{const pt=list()[+i.dataset.pq],f=food(pt.food),v=num(i.value);pt.qty=hasSv(f)&&puOf(pt)==="sv"?Math.round(v*f.sg*10)/10:v});
+    document.querySelectorAll("[data-pq]").forEach(i=>{const pt=list()[+i.dataset.pq],f=food(pt.food),v=num(i.value);pt.qty=!f?v:puOf(pt)==="sv"?fromSv(f,v):fromG(f,v)});
     m.s=[...document.querySelectorAll("[data-ms]")].filter(c=>c.checked).map(c=>+c.dataset.ms)};
   const bind=()=>{byId("x").onclick=closeSheet;
     byId("mserv").oninput=()=>{grab();if(mode==="parts"){const n=mealNutr({parts:m.parts,n:m.n});byId("mtot").innerHTML=(m.n>1?"Ανά μερίδα":"Σύνολο")+": "+nv(n)}};
@@ -918,7 +930,7 @@ function editMeal(id){
     document.querySelectorAll("[data-pq]").forEach(i=>i.onchange=()=>{grab();draw()});
     document.querySelectorAll("[data-pr]").forEach(b=>b.onclick=()=>{grab();list().splice(+b.dataset.pr,1);draw()});
     document.querySelectorAll("[data-pu]").forEach(b=>b.onclick=()=>{grab();const pt=list()[+b.dataset.pu];PU.set(pt,puOf(pt)==="sv"?"g":"sv");draw()});
-    byId("addPart").onchange=e=>{grab();const f=food(e.target.value);if(f){const pt={food:f.id,qty:hasSv(f)?+f.sg:f.u==="g"?100:1};if(hasSv(f))PU.set(pt,"sv");list().push(pt);draw()}};
+    byId("addPart").onchange=e=>{grab();const f=food(e.target.value);if(f){const pt={food:f.id,qty:f.u==="g"?(hasSv(f)?svG(f):100):1};if(hasSv(f))PU.set(pt,"sv");list().push(pt);draw()}};
     byId("ok").onclick=()=>{grab();if(!m.name.trim()){toast("Δώσε όνομα στη συνταγή");return}
       const fin={id:m.id,name:m.name.trim(),s:m.s,parts:mode==="parts"&&m.parts.length?m.parts:null,ing:mode==="fixed"&&m.ing.length?m.ing:null,n:m.n>1?m.n:undefined,kcal:m.kcal,p:m.p,c:m.c,f:m.f};
       if(fin.parts){const n=mealNutr(fin);Object.assign(fin,{kcal:r1(n.k),p:r1(n.p),c:r1(n.c),f:r1(n.f)})}
