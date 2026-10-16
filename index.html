@@ -2,7 +2,7 @@
 <html lang="el">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>Η Διατροφή μου</title>
 <meta name="theme-color" content="#FAFAF9" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#141413" media="(prefers-color-scheme: dark)">
@@ -37,7 +37,8 @@
   --prot:#6CC3AC; --prot-soft:#1D2E29; --warn:#F08672; --warn-soft:#3A201B; --ok:#6CC3AC; --carb:#E2B254; --fat:#8FB0E0; color-scheme:dark}
 *{box-sizing:border-box}
 [hidden]{display:none!important}
-html,body{background:var(--bg)}
+html,body{background:var(--bg);touch-action:pan-x pan-y;-webkit-text-size-adjust:100%;text-size-adjust:100%}
+button,a,input,select,label{touch-action:manipulation}
 body{color:var(--ink);font-family:var(--f-ui);font-size:15px;line-height:1.45;font-variant-numeric:tabular-nums;
   padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 84px}
 .wrap{max-width:720px;margin:0 auto;display:flex;flex-direction:column;gap:12px}
@@ -245,7 +246,11 @@ nav.tabs button.on{color:var(--ink)}
 /* ---------- Αρχικά δεδομένα (από το αρχείο Numbers) ---------- */
 // Έκδοση: ίδιο νούμερο με το C στο sw.js. Η ώρα δεν γράφεται με το χέρι: είναι η ώρα που ανέβηκε το index.html
 // στο GitHub Pages (κεφαλίδα Last-Modified της απάντησης που φυλάει το service worker), σε ώρα της συσκευής.
-const APP_VER={v:"v24",at:""};
+const APP_VER={v:"v25",at:""};
+// Χωρίς ζουμ (pinch / double-tap), και στο iOS που αγνοεί το user-scalable=no
+(()=>{const no=e=>e.preventDefault();
+  ["gesturestart","gesturechange","gestureend"].forEach(t=>document.addEventListener(t,no,{passive:false}));
+  document.addEventListener("touchmove",e=>{if(e.touches.length>1||(e.scale&&e.scale!==1))e.preventDefault()},{passive:false});})();
 function fmtDT(d){const p2=n=>String(n).padStart(2,"0");return `${p2(d.getDate())}/${p2(d.getMonth()+1)}/${d.getFullYear()} ${p2(d.getHours())}:${p2(d.getMinutes())}`}
 async function loadVerTime(){let lm=null;
   try{const r=await caches.match(location.href,{ignoreSearch:true})||await caches.match("./index.html");lm=r&&r.headers.get("last-modified")}catch(e){}
